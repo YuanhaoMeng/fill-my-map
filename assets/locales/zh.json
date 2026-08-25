@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "Fill My Map",
+  "NSLocationWhenInUseUsageDescription": "允许 Fill My Map 记录你主动探索过的街道。",
+  "NSLocationAlwaysAndWhenInUseUsageDescription": "允许 Fill My Map 在主动探索期间于锁屏后继续记录位置。"
+}

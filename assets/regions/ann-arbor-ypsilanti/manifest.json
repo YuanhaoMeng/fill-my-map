@@ -1,0 +1,31 @@
+{
+  "id": "ann-arbor-ypsilanti",
+  "version": "2026.08.24-v1",
+  "createdAt": "2026-08-24T23:15:00Z",
+  "sha256": {
+    "basemap": "d1a18e5bd845a9d3d1bcd450d3088a3d9f0c08f24f8ea999419c73eb22130902",
+    "network": "1388cae9bec27dd0a8984b79f5b15c1eca1722b4c641b8b43942f3902147337d"
+  },
+  "source": {
+    "name": "Geofabrik Michigan / Protomaps Basemap",
+    "snapshot": "michigan-260824.osm.pbf",
+    "url": "https://download.geofabrik.de/north-america/us/michigan-260824.osm.pbf"
+  },
+  "license": {
+    "data": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/copyright"
+  },
+  "cities": [
+    {
+      "id": "ann-arbor",
+      "name": "Ann Arbor",
+      "relationId": 135130
+    },
+    {
+      "id": "ypsilanti",
+      "name": "Ypsilanti",
+      "relationId": 135135
+    }
+  ]
+}

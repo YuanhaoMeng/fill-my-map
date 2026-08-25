@@ -1,0 +1,15 @@
+.DS_Store
+/.expo/
+/coverage/
+/dist/
+/node_modules/
+
+# Generated native projects
+/android/
+/ios/
+
+# Reproducible map-pack inputs and intermediates
+tools/map-pack/cache/
+tools/map-pack/work/
+
+*.log

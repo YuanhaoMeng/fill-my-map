@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+case "$PWD" in
+  */expo-modules-jsi/apple)
+    exec /usr/bin/xcodebuild "$@" CODE_SIGNING_ALLOWED=NO ;;
+  *)
+    exec /usr/bin/xcodebuild "$@" PATH="$PATH" ;;
+esac

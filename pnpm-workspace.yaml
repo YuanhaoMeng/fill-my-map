@@ -1,0 +1,4 @@
+allowBuilds:
+  unrs-resolver: true
+patchedDependencies:
+  '@maplibre/maplibre-react-native@11.3.7': patches/@maplibre__maplibre-react-native@11.3.7.patch

@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "Fill My Map",
+  "NSLocationWhenInUseUsageDescription": "Allow Fill My Map to record streets you explore.",
+  "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Fill My Map to keep recording an active exploration while your phone is locked."
+}
