@@ -1,5 +1,5 @@
 import type { CoverageStateRepository, LocationRecorder, NetworkRepository, ProgressRepository, RewardRepository } from "../../core/contracts";
-import type { CityProgress, CoverageVisualState, TrackingSession, TrackPoint, TravelMode } from "../../core/types";
+import type { CityProgress, Coordinate, TrackingSession, TrackPoint, TravelMode } from "../../core/types";
 import { DefaultCoverageMatcher } from "../coverage/DefaultCoverageMatcher";
 import { DefaultRewardEngine } from "../rewards/DefaultRewardEngine";
 import { cleanTrack } from "../coverage/cleanTrack";
@@ -24,7 +24,8 @@ export class ExplorationService {
     private readonly progress: ProgressRepository & CoverageStateRepository,
     private readonly rewards: RewardRepository,
     private readonly onUpdate: (update: ExplorationUpdate) => void,
-    private readonly onCoverage: (states: Readonly<Record<string, CoverageVisualState>>) => void,
+    private readonly onCoverage: (edgeIds: readonly string[]) => Promise<void> | void,
+    private readonly onLocation: (coordinate: Coordinate) => void = () => undefined,
   ) {}
 
   async start(mode: TravelMode) {
@@ -76,15 +77,18 @@ export class ExplorationService {
   private async process(points: readonly TrackPoint[]) {
     if (!this.session || !points.length) return;
     await this.progress.appendTrack(points);
+    const cleaned = cleanTrack(points, this.session.mode).points;
+    const latest = cleaned.at(-1);
+    if (latest) this.onLocation(latest.coordinate);
     const matchPoints = this.lastPoint ? [this.lastPoint, ...points] : points;
     this.lastPoint = points.at(-1) ?? this.lastPoint;
     const match = await new DefaultCoverageMatcher().match(matchPoints, this.session.mode, (point) =>
       this.network.nearbySamples(point, this.session!.mode),
     );
     await this.progress.saveVisitedSamples(this.regionVersion, this.session.mode, match.visitedSampleIds);
-    this.onCoverage(await this.progress.getEdgeStates(match.matchedEdgeIds));
+    if (match.matchedEdgeIds.length) await this.onCoverage(match.matchedEdgeIds);
     const reward = new DefaultRewardEngine();
-    for (const landmarkId of reward.unlockedLandmarks(cleanTrack(points, this.session.mode).points)) {
+    for (const landmarkId of reward.unlockedLandmarks(cleaned)) {
       await this.rewards.unlockLandmark({ landmarkId, unlockedAt: Date.now(), sessionId: this.session.id });
     }
     await this.emitProgress();

@@ -28,6 +28,8 @@ export function HomeScreen() {
           status={runtime.status}
           map={runtime.map}
           showUserLocation={Boolean(runtime.session)}
+          followSessionId={runtime.session?.id}
+          userCoordinate={runtime.userCoordinate}
           onEdgeLongPress={(id, state) =>
             promptExclusion(id, state, t, runtime.exclude, runtime.undoExclusion)
           }

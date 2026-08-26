@@ -34,6 +34,20 @@ describe("local SQLite lifecycle", () => {
     reopened.close();
   });
 
+  it("restores partial sample coverage before the edge is complete", () => {
+    const database = openTestDatabase();
+    database.prepare("INSERT INTO visited_samples VALUES (?, ?, ?, ?)")
+      .run("v1", "walk", "sample-1", "edge-1");
+    database.prepare("INSERT INTO edge_progress VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run("v1", "walk", "edge-1", "ann-arbor", 1, 5, 0);
+    database.close();
+    const reopened = new DatabaseSync(databasePath());
+    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples WHERE mode='walk'")).toBe(1);
+    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples WHERE mode='drive'")).toBe(0);
+    expect(scalar(reopened, "SELECT count(*) count FROM edge_progress WHERE completed=0")).toBe(1);
+    reopened.close();
+  });
+
   it("deletes raw tracks without progress and supports exclusion undo and reset", () => {
     const database = openTestDatabase();
     database.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)").run("s1", "walk", 1, 2, "completed");

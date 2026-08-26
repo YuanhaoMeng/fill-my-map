@@ -11,6 +11,7 @@ import type {
   TrackPoint,
   TravelMode,
   CoverageVisualState,
+  CoverageSegment,
 } from "./types";
 
 export interface RegionFiles {
@@ -87,6 +88,8 @@ export interface ResolvedSample {
   edgeId: string;
   cityId: string;
   sampleCount: number;
+  coordinate: readonly [number, number];
+  bearingDeg: number;
 }
 
 export interface CoverageCatalog {
@@ -99,6 +102,7 @@ export interface CoverageCatalog {
 export interface CoverageStateRepository {
   recoverInterruptedSessions(): Promise<void>;
   getEdgeStates(ids?: readonly string[]): Promise<Readonly<Record<string, CoverageVisualState>>>;
+  getCoverageSegments(ids?: readonly string[]): Promise<readonly CoverageSegment[]>;
 }
 
 export interface TrackHistoryRepository {

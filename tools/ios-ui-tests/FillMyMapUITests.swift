@@ -59,12 +59,20 @@ final class FillMyMapUITests: XCTestCase {
   func testRecordsCoveragePoint() {
     app.buttons["Start walk"].tap()
     XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 8))
+    let map = app.otherElements["Map"]
+    XCTAssertTrue(map.waitForExistence(timeout: 5))
+    map.swipeLeft()
+    let resume = app.buttons["Resume following"]
+    XCTAssertTrue(resume.waitForExistence(timeout: 5))
+    resume.tap()
+    XCTAssertFalse(resume.exists)
     sleep(3)
     app.buttons["Finish exploration"].tap()
     XCTAssertTrue(app.buttons["Start walk"].waitForExistence(timeout: 8))
     app.buttons["Manage local data"].tap()
     let completed = NSPredicate(format: "label CONTAINS 'points · completed'")
     XCTAssertTrue(app.staticTexts.matching(completed).firstMatch.waitForExistence(timeout: 5))
+    app.buttons["Close"].tap()
   }
 
   func testDriveSession() {

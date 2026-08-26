@@ -1,4 +1,4 @@
-import type { FeatureCollection, LineString, MultiPolygon, Point, Polygon } from "geojson";
+import type { FeatureCollection, LineString, MultiLineString, MultiPolygon, Point, Polygon } from "geojson";
 import type { StyleSpecification } from "@maplibre/maplibre-react-native";
 import type {
   CityProgress,
@@ -6,6 +6,7 @@ import type {
   MissingEdge,
   TrackingSession,
   TravelMode,
+  Coordinate,
 } from "../../core/types";
 import type { ExplorationService } from "../exploration/ExplorationService";
 import type { LocalProgressRepository } from "../../platform/database/LocalProgressRepository";
@@ -15,6 +16,7 @@ export interface MapContent {
   style: StyleSpecification;
   boundaries: FeatureCollection<Polygon | MultiPolygon>;
   edges: FeatureCollection<LineString>;
+  partialCoverage: FeatureCollection<MultiLineString>;
   landmarks: FeatureCollection<Point>;
   history?: FeatureCollection<LineString>;
   historyMode?: TravelMode;
@@ -27,6 +29,7 @@ export interface RuntimeState {
   progress: readonly CityProgress[];
   actionError: string | null;
   rewards: readonly RewardState[];
+  userCoordinate?: Coordinate;
 }
 
 export interface RuntimeResources {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cityBoundaryFeatures, landmarkFeatures } from "./mapData";
+import { cityBoundaryFeatures, landmarkFeatures, partialCoverageFeatures } from "./mapData";
 
 describe("offline map overlays", () => {
   it("renders the two configured city boundaries from bundled geometry", () => {
@@ -23,5 +23,14 @@ describe("offline map overlays", () => {
       { id: "landmark", name: "Landmark", cityId: "ann-arbor", coordinate: [-83.7, 42.2], radiusM: 75 },
     ]);
     expect(features.features[0]?.properties).toMatchObject({ id: "landmark", cityId: "ann-arbor" });
+  });
+
+  it("renders partial samples as mode-colored road segments", () => {
+    const features = partialCoverageFeatures([
+      { id: "1", edgeId: "a", coordinate: [-83.7, 42.2], bearingDeg: 90, state: "walk" },
+      { id: "2", edgeId: "b", coordinate: [-83.6, 42.3], bearingDeg: 0, state: "drive" },
+    ]);
+    expect(features.features.map((feature) => feature.properties?.state)).toEqual(["walk", "drive"]);
+    expect(features.features[0]?.geometry.coordinates[0]).toHaveLength(2);
   });
 });

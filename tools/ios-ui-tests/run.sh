@@ -57,6 +57,8 @@ run_test testLocationPermissionCanBeDenied
 xcrun simctl privacy "$SIMULATOR_UDID" grant location-always "$APP_BUNDLE"
 xcrun simctl location "$SIMULATOR_UDID" set 42.2760895,-83.7376592
 run_test testRecordsCoveragePoint
+assert_sql "SELECT count(*) FROM edge_progress WHERE visited_count>0 AND completed=0" "1" "partial coverage"
+run_test testLaunchesInstalledApp
 xcrun simctl location "$SIMULATOR_UDID" set 42.2769,-83.7382
 run_test testRecordsAndPersistsWalk
 xcrun simctl location "$SIMULATOR_UDID" set 42.2768073,-83.7380026

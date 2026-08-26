@@ -7,7 +7,7 @@ import { LocalTrackHistoryRepository } from "../../platform/database/LocalTrackH
 import { ExpoLocationRecorder } from "../../platform/location/ExpoLocationRecorder";
 import { BundledRegionRepository } from "../../platform/region/BundledRegionRepository";
 import { ExplorationService } from "../exploration/ExplorationService";
-import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures } from "../map/mapData";
+import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures, partialCoverageFeatures } from "../map/mapData";
 import { offlineStyle } from "../map/offlineStyle";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 
@@ -29,26 +29,50 @@ export async function initializeRuntime(setState: SetState, resources: { current
     progress.getCityProgress("ann-arbor", "drive"),
     progress.getCityProgress("ypsilanti", "drive"),
   ]);
-  const [annArbor, ypsilanti, landmarks, boundaries, states, initialProgress] = await Promise.all([
+  const [annArbor, ypsilanti, landmarks, boundaries, states, segments, initialProgress] = await Promise.all([
     network.listEdges("ann-arbor"),
     network.listEdges("ypsilanti"),
     network.listLandmarks(),
     network.listCityBoundaries(),
     progress.getEdgeStates(),
+    progress.getCoverageSegments(),
     loadProgress(),
   ]);
   const edges = [...annArbor, ...ypsilanti];
   const visualStates: Record<string, CoverageVisualState> = { ...states };
+  const visualSegments = new Map(segments.map((segment) => [segment.id, segment]));
   const map = {
     style: offlineStyle(files.basemapUri),
     boundaries: cityBoundaryFeatures(boundaries),
     edges: edgeFeatures(edges, visualStates),
+    partialCoverage: partialCoverageFeatures([...visualSegments.values()]),
     landmarks: landmarkFeatures(landmarks),
   };
-  const updateMap = (changed: Readonly<Record<string, CoverageVisualState>>, reset = false) => {
+  const updateMap = (
+    ids: readonly string[] | undefined,
+    changed: Readonly<Record<string, CoverageVisualState>>,
+    changedSegments: typeof segments,
+    reset = false,
+  ) => {
     if (reset) Object.keys(visualStates).forEach((key) => delete visualStates[key]);
+    if (reset) visualSegments.clear();
+    if (ids) {
+      const affected = new Set(ids);
+      ids.forEach((id) => delete visualStates[id]);
+      visualSegments.forEach((segment, id) => {
+        if (affected.has(segment.edgeId)) visualSegments.delete(id);
+      });
+    }
     Object.assign(visualStates, changed);
-    setState((current) => ({ ...current, map: { ...map, edges: edgeFeatures(edges, visualStates) } }));
+    changedSegments.forEach((segment) => visualSegments.set(segment.id, segment));
+    setState((current) => ({
+      ...current,
+      map: {
+        ...map,
+        edges: edgeFeatures(edges, visualStates),
+        partialCoverage: partialCoverageFeatures([...visualSegments.values()]),
+      },
+    }));
   };
   const loadRewards = async () => rewardsFrom(
     await rewards.listLandmarkUnlocks(),
@@ -58,7 +82,13 @@ export async function initializeRuntime(setState: SetState, resources: { current
   resources.current.progress = progress;
   resources.current.history = history;
   resources.current.loadProgress = loadProgress;
-  resources.current.refresh = async (ids, reset) => updateMap(await progress.getEdgeStates(ids), reset);
+  resources.current.refresh = async (ids, reset) => {
+    const [changed, changedSegments] = await Promise.all([
+      progress.getEdgeStates(ids),
+      progress.getCoverageSegments(ids),
+    ]);
+    updateMap(ids, changed, changedSegments, reset);
+  };
   resources.current.refreshRewards = async () => {
     const rewards = await loadRewards();
     setState((current) => ({ ...current, rewards }));
@@ -81,11 +111,13 @@ export async function initializeRuntime(setState: SetState, resources: { current
       setState((current) => ({
         ...current,
         session,
+        userCoordinate: session ? current.userCoordinate : undefined,
         progress: [...current.progress.filter((item) => item.mode !== changed[0]?.mode), ...changed],
       }));
       void resources.current.refreshRewards?.();
     },
-    updateMap,
+    async (ids) => resources.current.refresh?.(ids),
+    (coordinate) => setState((current) => ({ ...current, userCoordinate: coordinate })),
   );
   setState({
     status: "ready",

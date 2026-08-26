@@ -3,6 +3,7 @@ export type Coordinate = readonly [longitude: number, latitude: number];
 export type SessionStatus = "active" | "completed" | "interrupted";
 export type ExclusionReason = "private" | "closed" | "unsafe" | "map_error" | "other";
 export type CoverageVisualState = "unvisited" | "walk" | "drive" | "both" | "excluded";
+export type CoverageModeState = "walk" | "drive" | "both";
 
 export interface RegionManifest {
   id: string;
@@ -49,6 +50,14 @@ export interface CoverageSample {
   edgeId: string;
   coordinate: Coordinate;
   edgeBearingDeg: number;
+}
+
+export interface CoverageSegment {
+  id: string;
+  edgeId: string;
+  coordinate: Coordinate;
+  bearingDeg: number;
+  state: CoverageModeState;
 }
 
 export interface CityProgress {

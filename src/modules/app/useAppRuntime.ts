@@ -31,7 +31,7 @@ export function useAppRuntime() {
 
   const start = async (mode: TravelMode) => {
     try {
-      setState((current) => ({ ...current, actionError: null }));
+      setState((current) => ({ ...current, actionError: null, userCoordinate: undefined }));
       await resources.current.service?.start(mode);
     } catch (error) {
       setState((current) => ({ ...current, actionError: error instanceof Error ? error.message : "unknown" }));

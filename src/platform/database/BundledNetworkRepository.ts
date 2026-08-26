@@ -116,7 +116,8 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
       if (!batch.length) continue;
       rows.push(
         ...(await this.database.getAllAsync<SampleRow & { city_id: string; sample_count: number }>(
-          `SELECT s.id, s.edge_id, e.city_id, e.sample_count FROM samples s JOIN edges e ON e.id=s.edge_id
+          `SELECT s.id, s.edge_id, s.longitude, s.latitude, s.bearing, e.city_id, e.sample_count
+           FROM samples s JOIN edges e ON e.id=s.edge_id
            WHERE s.id IN (${batch.map(() => "?").join(",")})`,
           ...batch.map(Number),
         )),
@@ -127,6 +128,8 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
       edgeId: row.edge_id,
       cityId: row.city_id,
       sampleCount: row.sample_count,
+      coordinate: [row.longitude, row.latitude],
+      bearingDeg: row.bearing,
     }));
   }
 

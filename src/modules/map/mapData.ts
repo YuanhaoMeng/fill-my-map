@@ -1,5 +1,5 @@
-import type { FeatureCollection, LineString, MultiPolygon, Point, Polygon } from "geojson";
-import type { CoverageEdge, CoverageVisualState, TrackPoint } from "../../core/types";
+import type { FeatureCollection, LineString, MultiLineString, MultiPolygon, Point, Polygon } from "geojson";
+import type { CoverageEdge, CoverageModeState, CoverageSegment, CoverageVisualState, TrackPoint } from "../../core/types";
 import type { MapCityBoundary, MapLandmark } from "../../platform/database/BundledNetworkRepository";
 
 export function cityBoundaryFeatures(items: readonly MapCityBoundary[]): FeatureCollection<Polygon | MultiPolygon> {
@@ -27,6 +27,34 @@ export function edgeFeatures(
       geometry: { type: "LineString", coordinates: edge.coordinates.map(([lon, lat]) => [lon, lat]) },
     })),
   };
+}
+
+export function partialCoverageFeatures(
+  segments: readonly CoverageSegment[],
+): FeatureCollection<MultiLineString> {
+  const states: readonly CoverageModeState[] = ["walk", "drive", "both"];
+  return {
+    type: "FeatureCollection",
+    features: states.flatMap((state) => {
+      const coordinates = segments.filter((item) => item.state === state).map(sampleLine);
+      return coordinates.length
+        ? [{ type: "Feature" as const, id: state, properties: { state }, geometry: { type: "MultiLineString" as const, coordinates } }]
+        : [];
+    }),
+  };
+}
+
+function sampleLine(segment: CoverageSegment): number[][] {
+  const halfM = 7.5;
+  const bearing = (segment.bearingDeg * Math.PI) / 180;
+  const latitudeM = halfM * Math.cos(bearing);
+  const longitudeM = halfM * Math.sin(bearing);
+  const latitudeDelta = latitudeM / 111_320;
+  const longitudeDelta = longitudeM / (111_320 * Math.cos((segment.coordinate[1] * Math.PI) / 180));
+  return [
+    [segment.coordinate[0] - longitudeDelta, segment.coordinate[1] - latitudeDelta],
+    [segment.coordinate[0] + longitudeDelta, segment.coordinate[1] + latitudeDelta],
+  ];
 }
 
 export function landmarkFeatures(items: readonly MapLandmark[]): FeatureCollection<Point> {

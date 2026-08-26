@@ -6,18 +6,21 @@ import type {
   TrackingSession,
   TrackPoint,
   TravelMode,
-  CoverageVisualState,
 } from "../../core/types";
 import { edgeIsComplete, progressPercent } from "../../modules/coverage/progress";
 import { appSchema } from "./appSchema";
-import { visualState } from "./visualState";
+import { LocalCoverageStateReader } from "./LocalCoverageStateReader";
 
 export class LocalProgressRepository implements ProgressRepository, CoverageStateRepository {
+  private readonly coverageState: LocalCoverageStateReader;
+
   private constructor(
     private readonly database: SQLiteDatabase,
     private readonly catalog: CoverageCatalog,
     private readonly regionVersion: string,
-  ) {}
+  ) {
+    this.coverageState = new LocalCoverageStateReader(database, catalog, regionVersion);
+  }
 
   static async open(catalog: CoverageCatalog, regionVersion: string) {
     const database = await openDatabaseAsync("fill-my-map.sqlite");
@@ -151,32 +154,11 @@ export class LocalProgressRepository implements ProgressRepository, CoverageStat
     await this.database.runAsync("DELETE FROM exclusions WHERE edge_id=? AND mode=?", edgeId, mode);
   }
 
-  async getEdgeStates(ids?: readonly string[]) {
-    const clause = ids?.length ? ` AND edge_id IN (${ids.map(() => "?").join(",")})` : "";
-    const params = ids ? [...ids] : [];
-    const progress = await this.database.getAllAsync<{ edge_id: string; mode: TravelMode }>(
-      `SELECT edge_id, mode FROM edge_progress WHERE region_version=? AND completed=1${clause}`,
-      this.regionVersion,
-      ...params,
-    );
-    const exclusions = await this.database.getAllAsync<{ edge_id: string }>(
-      `SELECT DISTINCT edge_id FROM exclusions WHERE 1=1${clause}`,
-      ...params,
-    );
-    const flags = new Map<string, Set<string>>();
-    progress.forEach((row) => {
-      const modes = flags.get(row.edge_id) ?? new Set<string>();
-      modes.add(row.mode);
-      flags.set(row.edge_id, modes);
-    });
-    exclusions.forEach((row) => {
-      const modes = flags.get(row.edge_id) ?? new Set<string>();
-      modes.add("excluded");
-      flags.set(row.edge_id, modes);
-    });
-    return Object.fromEntries(
-      [...flags].map(([id, modes]) => [id, visualState(modes)]),
-    ) as Readonly<Record<string, CoverageVisualState>>;
+  getEdgeStates(ids?: readonly string[]) {
+    return this.coverageState.getEdgeStates(ids);
   }
 
+  getCoverageSegments(ids?: readonly string[]) {
+    return this.coverageState.getCoverageSegments(ids);
+  }
 }

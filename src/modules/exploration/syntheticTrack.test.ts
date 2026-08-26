@@ -28,6 +28,7 @@ describe("two-hour synthetic exploration", () => {
     const recorder = new SyntheticRecorder();
     const stored: TrackPoint[] = [];
     const visited = new Set<string>();
+    const refreshedEdges = new Set<string>();
     let finalStatus = "";
     const progress: ProgressRepository & CoverageStateRepository = {
       async createSession(mode) {
@@ -43,6 +44,7 @@ describe("two-hour synthetic exploration", () => {
       async undoExclusion() {},
       async recoverInterruptedSessions() {},
       async getEdgeStates() { return {}; },
+      async getCoverageSegments() { return []; },
     };
     const network: NetworkRepository = {
       async nearbySamples(point) {
@@ -57,13 +59,17 @@ describe("two-hour synthetic exploration", () => {
       async listLandmarkUnlocks() { return []; },
       async listCityCompletionUnlocks() { return []; },
     };
-    const service = new ExplorationService("test-v1", recorder, network, progress, rewards, () => {}, () => {});
+    const service = new ExplorationService(
+      "test-v1", recorder, network, progress, rewards, () => {},
+      (ids) => ids.forEach((id) => refreshedEdges.add(id)),
+    );
     const track = twoHourTrack("walk");
     await service.start("walk");
     for (let offset = 0; offset < track.length; offset += 60) recorder.emit(track.slice(offset, offset + 60));
     await service.stop();
     expect(stored).toHaveLength(1_441);
     expect(visited.size).toBeGreaterThan(1_000);
+    expect(refreshedEdges).toEqual(new Set(["synthetic-edge"]));
     expect(finalStatus).toBe("completed");
   });
 
@@ -136,6 +142,7 @@ function testProgress(onCreate: () => void): ProgressRepository & CoverageStateR
     },
     async exclude() {}, async undoExclusion() {}, async recoverInterruptedSessions() {},
     async getEdgeStates() { return {}; },
+    async getCoverageSegments() { return []; },
   };
 }
 

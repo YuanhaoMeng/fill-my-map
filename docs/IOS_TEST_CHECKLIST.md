@@ -8,9 +8,13 @@
 - [x] `pnpm verify` passes.
 - [x] Xcode Debug build succeeds with minimum iOS 17.
 - [x] App starts on an iOS simulator.
-- [ ] App starts on a Personal Team signed iPhone.
+- [x] App starts on a Personal Team signed iPhone.
 - [x] The bundled map displays both cities, roads, boundaries, and ten landmarks
   without a runtime map request on the simulator.
+- [x] The first valid session location recenters and follows; dragging suspends
+  following until the explicit resume control is used.
+- [x] Sub-threshold walk/drive coverage renders immediately, stays mode-isolated,
+  and reloads from local SQLite after restart.
 - [ ] Airplane mode displays the same map on a physical iPhone.
 - [x] A two-hour synthetic track completes without a crash.
 
