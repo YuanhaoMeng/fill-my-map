@@ -12,13 +12,18 @@ if [[ ! "$SIMULATOR_UDID" =~ ^[0-9A-Fa-f-]{36}$ ]]; then
 fi
 
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$SOURCE_DIR/../.." && pwd)"
 TEST_DIR="$(mktemp -d -t fill-my-map-ui-tests)"
 case "$TEST_DIR" in
   /tmp/*|/private/tmp/*|/var/folders/*) ;;
   *) echo "Unexpected temporary directory: $TEST_DIR"; exit 1 ;;
 esac
+SEEDED_FILE=""
 cleanup() {
   xcrun simctl location "$SIMULATOR_UDID" clear >/dev/null 2>&1 || true
+  if [[ -n "$SEEDED_FILE" && -f "$SEEDED_FILE" ]]; then
+    mv "$SEEDED_FILE" "$TEST_DIR/import-seed.fillmap"
+  fi
   rm -rf -- "$TEST_DIR"
 }
 trap cleanup EXIT
@@ -28,6 +33,28 @@ if [[ -z "$DATA_DIR" ]]; then
   echo "Install the Release app on simulator $SIMULATOR_UDID first."
   exit 1
 fi
+clear_import_seed() {
+  if [[ -n "$SEEDED_FILE" && -f "$SEEDED_FILE" ]]; then
+    mv "$SEEDED_FILE" "$TEST_DIR/$(basename "$SEEDED_FILE")"
+  fi
+  SEEDED_FILE=""
+}
+seed_import_file() {
+  local archive="$1" device_data groups metadata identifier
+  device_data="${DATA_DIR%%/Containers/*}"
+  groups="$device_data/Containers/Shared/AppGroup"
+  for metadata in "$groups"/*/.com.apple.mobile_container_manager.metadata.plist; do
+    identifier="$(/usr/libexec/PlistBuddy -c 'Print:MCMMetadataIdentifier' "$metadata" 2>/dev/null || true)"
+    if [[ "$identifier" == "group.com.apple.FileProvider.LocalStorage" ]]; then
+      SEEDED_FILE="$(dirname "$metadata")/File Provider Storage/$archive"
+      cp "$REPO_DIR/map-packs/releases/$archive" "$SEEDED_FILE"
+      xcrun simctl openurl "$SIMULATOR_UDID" "file://$SEEDED_FILE"
+      return
+    fi
+  done
+  echo "Simulator local Files provider was not found."
+  exit 1
+}
 cp "$SOURCE_DIR/FillMyMapUITests.swift" "$SOURCE_DIR/generate.rb" "$TEST_DIR/"
 cd "$TEST_DIR"
 GEM_HOME="$(brew --prefix cocoapods)/libexec" ruby generate.rb
@@ -70,4 +97,12 @@ run_test testGpxExportUsesSystemShare
 run_test testDownloadSwitchAndDeleteYpsilanti
 test ! -e "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2"
 assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress retained"
+seed_import_file "ypsilanti-2026.08.24-v2.fillmap"
+run_test testImportYpsilantiFromFiles
+test -f "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2/network.sqlite"
+clear_import_seed
+seed_import_file "ann-arbor-2026.08.24-v2.fillmap"
+run_test testDeleteAndImportAnnArbor
+test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
+assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress restored"
 echo "iOS UI acceptance passed on $SIMULATOR_UDID."

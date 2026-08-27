@@ -10,7 +10,7 @@
 - [x] Camera follow, partial coverage restart, city isolation, and share-privacy tests pass.
 - [x] Release `.app` contains no `.pmtiles`, `network.sqlite`, or `.fillmap`.
 - [x] Fresh simulator launch shows city selection with no map installed.
-- [ ] Simulator downloads, activates, switches, deletes, and reimports both packages.
+- [x] Simulator downloads, activates, switches, deletes, and reimports both packages.
 
 ## Exploration and sharing
 
@@ -29,7 +29,7 @@
 - [x] Force-quit marks an active session interrupted on next launch.
 - [ ] Corrupt and truncated packages are rejected without replacing an installed map.
 - [ ] Low-storage download/export failure preserves maps, tracks, and progress.
-- [ ] Deleting a city map preserves progress after reinstall.
+- [x] Deleting a city map preserves progress after reinstall.
 - [ ] Recording makes no network request; downloaded maps work in airplane mode.
 
 ## Real iPhone / field work (must not be simulated)

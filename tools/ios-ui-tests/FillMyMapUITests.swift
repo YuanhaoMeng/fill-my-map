@@ -101,6 +101,45 @@ final class FillMyMapUITests: XCTestCase {
     app.terminate()
   }
 
+  func testImportYpsilantiFromFiles() {
+    openCityMaps()
+    selectImportFile("ypsilanti-2026.08.24-v2.fillmap")
+    assertActiveMap(city: "Ypsilanti", timeout: 60)
+    app.buttons["Close"].tap()
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.staticTexts["Ypsilanti"].exists)
+    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
+  }
+
+  func testDeleteAndImportAnnArbor() {
+    openCityMaps()
+    app.buttons.matching(identifier: "×").element(boundBy: 0).tap()
+    XCTAssertTrue(app.alerts["Delete this city map?"].waitForExistence(timeout: 5))
+    app.alerts.buttons["Delete"].tap()
+    XCTAssertTrue(app.buttons["Download"].waitForExistence(timeout: 15))
+    selectImportFile("ann-arbor-2026.08.24-v2.fillmap")
+    assertActiveMap(city: "Ann Arbor", timeout: 60)
+    app.buttons["Close"].tap()
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
+  }
+
+  private func selectImportFile(_ name: String) {
+    app.buttons["Import .fillmap"].tap()
+    let file = app.descendants(matching: .any)
+      .matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
+    if !file.waitForExistence(timeout: 2) {
+      let browse = app.tabBars.buttons["Browse"]
+      if browse.waitForExistence(timeout: 5) { browse.tap() }
+    }
+    if !file.waitForExistence(timeout: 3) {
+      let local = app.cells.containing(.staticText, identifier: "On My iPhone").firstMatch
+      if local.waitForExistence(timeout: 5) { local.tap() }
+    }
+    XCTAssertTrue(file.waitForExistence(timeout: 15))
+    file.tap()
+  }
+
   private func openCityMaps() {
     openMenuItem("City maps")
     XCTAssertTrue(app.staticTexts["Choose a city map to explore."].waitForExistence(timeout: 10))
