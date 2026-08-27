@@ -8,10 +8,12 @@ import { theme } from "./theme";
 export function RewardsModal({
   visible,
   rewards,
+  cityName,
   onClose,
 }: {
   visible: boolean;
   rewards: readonly RewardState[];
+  cityName?: string;
   onClose: () => void;
 }) {
   const { t } = useMessages();
@@ -31,8 +33,8 @@ export function RewardsModal({
               <Text style={styles.brand}>FILL MY MAP</Text>
               <View style={styles.center}>
                 <Text style={styles.kicker}>{t(selected.kind === "landmark" ? "landmarkUnlocked" : "cityCompleted")}</Text>
-                <Text style={styles.name}>{selected.kind === "landmark" ? selected.name : t(selected.cityId === "ann-arbor" ? "annArbor" : "ypsilanti")}</Text>
-                <Text style={styles.city}>{selected.kind === "city" ? t(selected.mode) : t(selected.cityId === "ann-arbor" ? "annArbor" : "ypsilanti")}</Text>
+                <Text style={styles.name}>{selected.kind === "landmark" ? selected.name : cityName ?? selected.cityId}</Text>
+                <Text style={styles.city}>{cityName ?? selected.cityId}</Text>
                 <Text style={styles.badge}>◆</Text>
               </View>
               <Text style={styles.privacy}>{t("sharePrivacy")}</Text>
@@ -51,9 +53,9 @@ export function RewardsModal({
             </View>
             <ScrollView contentContainerStyle={styles.list}>
               {rewards.map((reward) => (
-                <TouchableOpacity accessibilityRole="button" key={reward.kind === "landmark" ? reward.landmarkId : `${reward.cityId}-${reward.mode}`} style={styles.reward} onPress={() => setSelected(reward)}>
-                  <Text style={styles.rewardName}>◆ {reward.kind === "landmark" ? reward.name : `${t("cityCompleted")} · ${t(reward.mode)}`}</Text>
-                  <Text style={styles.city}>{t(reward.cityId === "ann-arbor" ? "annArbor" : "ypsilanti")}</Text>
+                <TouchableOpacity accessibilityRole="button" key={reward.kind === "landmark" ? reward.landmarkId : reward.cityId} style={styles.reward} onPress={() => setSelected(reward)}>
+                  <Text style={styles.rewardName}>◆ {reward.kind === "landmark" ? reward.name : t("cityCompleted")}</Text>
+                  <Text style={styles.city}>{cityName ?? reward.cityId}</Text>
                 </TouchableOpacity>
               ))}
               {!rewards.length ? <Text style={styles.city}>{t("noRewards")}</Text> : null}

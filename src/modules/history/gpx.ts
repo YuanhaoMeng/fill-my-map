@@ -9,7 +9,7 @@ export function gpx(session: SessionSummary, points: readonly TrackPoint[]) {
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="Fill My Map" xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata><name>Fill My Map ${session.mode}</name></metadata>
+  <metadata><name>Fill My Map ${session.cityId}</name></metadata>
   <trk><name>${session.id}</name><trkseg>
 ${trackPoints}
   </trkseg></trk>

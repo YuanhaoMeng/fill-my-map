@@ -1,5 +1,13 @@
 # Fill My Map — Mac mini migration handoff
 
+> Update, 2026-08-27: the product direction below has been superseded. The App
+> now contains no bundled map, uses explicit downloadable single-city packages,
+> and has one unified exploration mode. Ann Arbor and Ypsilanti are separate
+> `.fillmap` packages. Schema v2 intentionally clears the old walk/drive data.
+> Current implementation and acceptance truth live in `README.md`,
+> `docs/ARCHITECTURE.md`, `docs/MAP_PACK.md`, and
+> `docs/IOS_TEST_CHECKLIST.md`. The remaining text is migration history only.
+
 This handoff records the local state on 2026-08-25. v0.1 is implemented but
 not accepted: automated checks and simulator acceptance pass, while physical
 iPhone and field tests remain. The repository has no commits and no remote; all

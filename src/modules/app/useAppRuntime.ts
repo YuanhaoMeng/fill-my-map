@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import type {
-  ExclusionReason,
-  SessionSummary,
-  TravelMode,
-} from "../../core/types";
+import type { ExclusionReason, SessionSummary } from "../../core/types";
+import { FileCityMapRepository } from "../../platform/region/FileCityMapRepository";
 import { GpxExporter } from "../history/GpxExporter";
 import { trackFeature } from "../map/mapData";
+import { withoutRawTrack } from "../share/shareSnapshot";
+import type { CityCatalogEntry, InstalledCity } from "../regions/cityPackTypes";
 import { initializeRuntime } from "./initializeRuntime";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 export type { MapContent } from "./runtimeTypes";
+
+const emptyMaps = { catalog: [], installed: [], active: null } as const;
 
 export function useAppRuntime() {
   const [state, setState] = useState<RuntimeState>({
@@ -17,42 +18,70 @@ export function useAppRuntime() {
     progress: [],
     actionError: null,
     rewards: [],
+    maps: emptyMaps,
   });
   const resources = useRef<RuntimeResources>({});
+  const maps = useRef(new FileCityMapRepository());
+  const [generation, setGeneration] = useState(0);
+
   useEffect(() => {
     let active = true;
-    void initializeRuntime((next) => active && setState(next), resources).catch(() => {
+    const currentResources: RuntimeResources = {};
+    resources.current = currentResources;
+    const holder = { current: currentResources };
+    void boot(maps.current, (next) => active && setState(next), holder).catch(() => {
       if (active) setState((current) => ({ ...current, status: "error" }));
     });
     return () => {
       active = false;
+      void currentResources.dispose?.();
     };
-  }, []);
+  }, [generation]);
 
-  const start = async (mode: TravelMode) => {
-    try {
-      setState((current) => ({ ...current, actionError: null, userCoordinate: undefined }));
-      await resources.current.service?.start(mode);
-    } catch (error) {
-      setState((current) => ({ ...current, actionError: error instanceof Error ? error.message : "unknown" }));
-    }
+  const reload = () => setGeneration((value) => value + 1);
+  const start = async () => {
+    setState((current) => ({
+      ...current,
+      userCoordinate: undefined,
+      map: current.map ? withoutRawTrack(current.map) : current.map,
+    }));
+    await runAction(setState, () => resources.current.service?.start());
   };
-  const stop = async () => {
-    try {
-      await resources.current.service?.stop();
-    } catch (error) {
-      setState((current) => ({
-        ...current,
-        actionError: error instanceof Error ? error.message : "unknown",
-      }));
-    }
+  const stop = async () => runAction(setState, () => resources.current.service?.stop());
+  const downloadMap = async (entry: CityCatalogEntry) => {
+    await runAction(setState, async () => {
+      const installed = await maps.current.download(entry, (downloadProgress) =>
+        setState((current) => ({ ...current, maps: { ...current.maps, downloadProgress } })),
+      );
+      await maps.current.activate(installed);
+      reload();
+    });
   };
-  const exclude = async (edgeId: string, mode: TravelMode, reason: ExclusionReason) => {
-    await resources.current.progress?.exclude({ edgeId, mode, reason, createdAt: Date.now() });
+  const importMap = async () => {
+    await runAction(setState, async () => {
+      const installed = await maps.current.importFromPicker();
+      if (installed) {
+        await maps.current.activate(installed);
+        reload();
+      }
+    });
+  };
+  const activateMap = async (city: InstalledCity) => {
+    if (state.session) return;
+    await maps.current.activate(city);
+    reload();
+  };
+  const deleteMap = async (city: InstalledCity) => {
+    if (state.session) return;
+    await maps.current.delete(city);
+    reload();
+  };
+  const exclude = async (edgeId: string, reason: ExclusionReason) => {
+    await resources.current.progress?.exclude({ edgeId, reason, createdAt: Date.now() });
     await resources.current.refresh?.([edgeId]);
   };
-  const undoExclusion = async (edgeId: string, mode: TravelMode) => {
-    await resources.current.progress?.undoExclusion(edgeId, mode);
+  const undoExclusion = async (edgeId: string) => {
+    await resources.current.progress?.undoExclusion(edgeId);
     await resources.current.refresh?.([edgeId]);
   };
   const listSessions = async () => resources.current.history?.listSessions() ?? [];
@@ -68,23 +97,22 @@ export function useAppRuntime() {
     const progress = await resources.current.loadProgress?.() ?? [];
     setState((current) => ({ ...current, progress, rewards: [] }));
   };
-  const listMissing = async (cityId: string, mode: TravelMode) =>
-    resources.current.listMissing?.(cityId, mode) ?? [];
+  const listMissing = async () => resources.current.listMissing?.() ?? [];
   const viewSession = async (session: SessionSummary) => {
     const points = await resources.current.history?.getTrack(session.id);
-    if (points) {
-      setState((current) => ({
-        ...current,
-        map: current.map
-          ? { ...current.map, history: trackFeature(points), historyMode: session.mode }
-          : current.map,
-      }));
-    }
+    if (points) setState((current) => ({
+      ...current,
+      map: current.map ? { ...current.map, history: trackFeature(points) } : current.map,
+    }));
   };
   return {
     ...state,
     start,
     stop,
+    downloadMap,
+    importMap,
+    activateMap,
+    deleteMap,
     exclude,
     undoExclusion,
     listSessions,
@@ -95,4 +123,36 @@ export function useAppRuntime() {
     viewSession,
     listMissing,
   };
+}
+
+async function boot(
+  repository: FileCityMapRepository,
+  setState: (state: RuntimeState | ((current: RuntimeState) => RuntimeState)) => void,
+  resources: { current: RuntimeResources },
+) {
+  const [installed, active, catalog] = await Promise.all([
+    repository.listInstalled(),
+    repository.getActive(),
+    repository.loadCatalog().catch(() => ({ formatVersion: 1 as const, cities: [] })),
+  ]);
+  setState((current) => ({
+    ...current,
+    status: active ? "loading" : "needs-map",
+    map: undefined,
+    session: null,
+    maps: { catalog: catalog.cities, installed, active },
+  }));
+  if (active) await initializeRuntime(setState, resources, active);
+}
+
+async function runAction(
+  setState: (state: RuntimeState | ((current: RuntimeState) => RuntimeState)) => void,
+  action: () => Promise<unknown> | undefined,
+) {
+  try {
+    setState((current) => ({ ...current, actionError: null }));
+    await action();
+  } catch (error) {
+    setState((current) => ({ ...current, actionError: error instanceof Error ? error.message : "unknown" }));
+  }
 }

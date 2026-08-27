@@ -1,23 +1,38 @@
 # Privacy policy (v0.1)
 
-Last updated: 2026-08-25
+Last updated: 2026-08-27
 
-Fill My Map v0.1 has no account system, backend, analytics, advertising, telemetry, or runtime map service. The app does not transmit location tracks to the developer or any third party.
+Fill My Map has no account, backend, analytics, advertising, telemetry, cloud
+sync, or track upload. The App does not send location tracks to the developer or
+any map provider.
 
 ## On-device data
 
-When the user explicitly starts an exploration, the app records location, accuracy, speed, heading, mode, and timestamps. It derives local street progress and landmark unlocks. Raw tracks, exclusions, progress, settings, and rewards are stored only in the app's local SQLite database.
+When the user starts exploring, the App records location fixes, accuracy, speed,
+heading, and timestamps. It derives street progress and rewards locally. Raw
+tracks, exclusions, progress, settings, and rewards remain in app-owned storage.
+Background location lets an active exploration continue while the phone is
+locked. Force-quitting stops recording; the next launch marks the session interrupted.
 
-Background location is requested so an active exploration can continue while the screen is locked. Recording stops when the user ends the session. Force-quitting the app stops recording and the session is marked interrupted on the next launch.
+## City map downloads
 
-## User controls
+The App binary contains no city maps. When the user explicitly opens the city
+catalog or downloads a package, it contacts this project's GitHub Pages and
+GitHub Releases over HTTPS. GitHub may receive ordinary web-request information
+such as IP address, time, and the requested city-package URL under GitHub's own
+privacy terms. Fill My Map does not attach location, tracks, identifiers, or
+progress to those requests. Installed maps work without a network connection.
 
-The user can inspect session metadata, view a recorded path, export a selected session as GPX, delete one or all raw tracks without deleting confirmed progress, or reset all app data after a second confirmation.
+Users may also import a `.fillmap` file through the iOS document picker.
 
-Share cards are generated locally and omit exact routes, endpoints, residential locations, and precise times. Exporting or sharing opens the operating system share sheet; the user chooses the recipient and is responsible for that external transfer.
+## User controls and sharing
 
-## Maps
+Users can view or export a selected raw track as GPX, delete raw tracks while
+keeping progress, delete city-map files while keeping progress, or reset all user
+data after two confirmations.
 
-The bundled offline map is derived from OpenStreetMap and does not contact a map provider while the app runs. See `DATA-LICENSE.md`.
+Finishing an exploration creates a local screenshot of the active city coverage.
+It omits the exact route, endpoints, user marker, residence, and precise time.
+Export and sharing use the system share sheet; the user chooses the recipient.
 
-Questions and security reports should be submitted through the public repository once its URL is configured.
+Questions and security reports: https://github.com/YuanhaoMeng/fill-my-map/issues

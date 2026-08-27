@@ -12,9 +12,26 @@ export const pack = {
 };
 
 export const cities = [
-  { id: "ann-arbor", name: "Ann Arbor", relationId: 135130 },
-  { id: "ypsilanti", name: "Ypsilanti", relationId: 135135 },
+  {
+    id: "ann-arbor",
+    name: "Ann Arbor",
+    relationId: 135130,
+    bbox: "-83.81,42.21,-83.665,42.334",
+    expected: { edges: 4_843, samples: 70_995, landmarks: 5 },
+  },
+  {
+    id: "ypsilanti",
+    name: "Ypsilanti",
+    relationId: 135135,
+    bbox: "-83.662,42.214,-83.586,42.271",
+    expected: { edges: 659, samples: 10_935, landmarks: 5 },
+  },
 ];
+
+export const cityPackVersion = "2026.08.24-v2";
+export const catalogUrl = "https://yuanhaomeng.github.io/fill-my-map/maps/catalog.json";
+export const releaseBaseUrl =
+  "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.24-v2";
 
 export const landmarks = [
   ["aa-stadium", "ann-arbor", "Michigan Stadium", -83.7487, 42.2658, "relation/1637002"],

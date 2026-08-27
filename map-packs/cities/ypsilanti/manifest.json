@@ -1,0 +1,32 @@
+{
+  "formatVersion": 1,
+  "id": "ypsilanti",
+  "displayName": "Ypsilanti",
+  "version": "2026.08.24-v2",
+  "createdAt": "2026-08-24T23:15:00Z",
+  "bounds": [
+    -83.662,
+    42.214,
+    -83.586,
+    42.271
+  ],
+  "sha256": {
+    "basemap": "f6355d8acc4cbad47f36c48417f084f502ee425d79401e92a76cadd9918c2927",
+    "network": "d36e39ae23f2bd8f9e11094d6721229d32f34ba30b89ef74126aeaf2b1b29414"
+  },
+  "source": {
+    "name": "Geofabrik Michigan / Protomaps Basemap",
+    "snapshot": "michigan-260824.osm.pbf",
+    "url": "https://download.geofabrik.de/north-america/us/michigan-260824.osm.pbf"
+  },
+  "license": {
+    "data": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/copyright"
+  },
+  "city": {
+    "id": "ypsilanti",
+    "name": "Ypsilanti",
+    "relationId": 135135
+  }
+}

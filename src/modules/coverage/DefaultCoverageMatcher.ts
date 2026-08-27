@@ -8,8 +8,8 @@ const HEADING_SCORE_WEIGHT = 0.12;
 const CONTINUITY_BONUS = 6;
 
 export class DefaultCoverageMatcher implements CoverageMatcher {
-  async match(points: Parameters<CoverageMatcher["match"]>[0], mode: Parameters<CoverageMatcher["match"]>[1], nearby: Parameters<CoverageMatcher["match"]>[2]) {
-    const cleaned = cleanTrack(points, mode);
+  async match(points: Parameters<CoverageMatcher["match"]>[0], nearby: Parameters<CoverageMatcher["match"]>[1]) {
+    const cleaned = cleanTrack(points);
     const visited = new Set<string>();
     const edges = new Set<string>();
     let rejectedPoints = cleaned.rejectedPoints;

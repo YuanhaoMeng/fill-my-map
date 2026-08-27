@@ -1,15 +1,13 @@
-import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
+import type { SQLiteDatabase } from "expo-sqlite";
 import type { TrackHistoryRepository } from "../../core/contracts";
-import type { SessionSummary, TravelMode } from "../../core/types";
-import { appSchema } from "./appSchema";
+import type { SessionSummary } from "../../core/types";
+import { openAppDatabase } from "./openAppDatabase";
 
 export class LocalTrackHistoryRepository implements TrackHistoryRepository {
   private constructor(private readonly database: SQLiteDatabase) {}
 
   static async open() {
-    const database = await openDatabaseAsync("fill-my-map.sqlite");
-    await database.execAsync(appSchema);
-    return new LocalTrackHistoryRepository(database);
+    return new LocalTrackHistoryRepository(await openAppDatabase());
   }
 
   async listSessions(): Promise<readonly SessionSummary[]> {
@@ -19,7 +17,8 @@ export class LocalTrackHistoryRepository implements TrackHistoryRepository {
     );
     return rows.map((row) => ({
       id: String(row.id),
-      mode: String(row.mode) as TravelMode,
+      cityId: String(row.city_id),
+      regionVersion: String(row.region_version),
       startedAt: Number(row.started_at),
       endedAt: row.ended_at === null ? null : Number(row.ended_at),
       status: String(row.status) as SessionSummary["status"],

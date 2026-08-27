@@ -1,0 +1,32 @@
+{
+  "formatVersion": 1,
+  "id": "ann-arbor",
+  "displayName": "Ann Arbor",
+  "version": "2026.08.24-v2",
+  "createdAt": "2026-08-24T23:15:00Z",
+  "bounds": [
+    -83.81,
+    42.21,
+    -83.665,
+    42.334
+  ],
+  "sha256": {
+    "basemap": "e94d17db94bf02a1b532f5296dec44ef051fb2b48f1903075f94b110ad1a0b7d",
+    "network": "e217199d3bbf0a2948bbdc302262d9ec5f8a6a941c2592f5f3023aa7c388f94b"
+  },
+  "source": {
+    "name": "Geofabrik Michigan / Protomaps Basemap",
+    "snapshot": "michigan-260824.osm.pbf",
+    "url": "https://download.geofabrik.de/north-america/us/michigan-260824.osm.pbf"
+  },
+  "license": {
+    "data": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/copyright"
+  },
+  "city": {
+    "id": "ann-arbor",
+    "name": "Ann Arbor",
+    "relationId": 135130
+  }
+}

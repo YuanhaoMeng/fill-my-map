@@ -13,57 +13,46 @@ afterEach(() => {
 });
 
 describe("local SQLite lifecycle", () => {
-  it("persists progress and rewards independently by travel mode", () => {
+  it("isolates progress and rewards by city and map version", () => {
     const database = openTestDatabase();
-    database.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)").run("walk", "walk", 1, 2, "completed");
-    database.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)").run("drive", "drive", 3, 4, "completed");
     const visit = database.prepare("INSERT INTO visited_samples VALUES (?, ?, ?, ?)");
-    visit.run("v1", "walk", "sample-1", "edge-1");
-    visit.run("v1", "drive", "sample-1", "edge-1");
-    const completion = database.prepare("INSERT INTO city_completion_unlocks VALUES (?, ?, ?, ?, ?)");
-    completion.run("v1", "ann-arbor", "walk", 5, "walk");
-    completion.run("v1", "ann-arbor", "drive", 6, "drive");
-    completion.run("v1", "ypsilanti", "walk", 7, "walk");
-    completion.run("v1", "ypsilanti", "drive", 8, "drive");
-    database.prepare("INSERT OR IGNORE INTO city_completion_unlocks VALUES (?, ?, ?, ?, ?)")
-      .run("v1", "ann-arbor", "walk", 9, "drive");
+    visit.run("ann-arbor", "v2", "sample-1", "edge-1");
+    visit.run("ypsilanti", "v2", "sample-1", "edge-1");
+    visit.run("ann-arbor", "v3", "sample-1", "edge-1");
+    const completion = database.prepare("INSERT INTO city_completion_unlocks VALUES (?, ?, ?, ?)");
+    completion.run("ann-arbor", "v2", 5, "s1");
+    completion.run("ypsilanti", "v2", 6, "s2");
+    expect(scalar(database, "SELECT count(*) count FROM visited_samples")).toBe(3);
+    expect(scalar(database, "SELECT count(*) count FROM city_completion_unlocks")).toBe(2);
+    expect(columns(database, "visited_samples")).not.toContain("mode");
     database.close();
-    const reopened = new DatabaseSync(databasePath());
-    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples")).toBe(2);
-    expect(scalar(reopened, "SELECT count(*) count FROM city_completion_unlocks")).toBe(4);
-    reopened.close();
   });
 
-  it("restores partial sample coverage before the edge is complete", () => {
+  it("restores partial sample coverage before an edge is complete", () => {
     const database = openTestDatabase();
     database.prepare("INSERT INTO visited_samples VALUES (?, ?, ?, ?)")
-      .run("v1", "walk", "sample-1", "edge-1");
-    database.prepare("INSERT INTO edge_progress VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run("v1", "walk", "edge-1", "ann-arbor", 1, 5, 0);
+      .run("ann-arbor", "v2", "sample-1", "edge-1");
+    database.prepare("INSERT INTO edge_progress VALUES (?, ?, ?, ?, ?, ?)")
+      .run("ann-arbor", "v2", "edge-1", 1, 5, 0);
     database.close();
     const reopened = new DatabaseSync(databasePath());
-    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples WHERE mode='walk'")).toBe(1);
-    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples WHERE mode='drive'")).toBe(0);
+    expect(scalar(reopened, "SELECT count(*) count FROM visited_samples")).toBe(1);
     expect(scalar(reopened, "SELECT count(*) count FROM edge_progress WHERE completed=0")).toBe(1);
     reopened.close();
   });
 
-  it("deletes raw tracks without progress and supports exclusion undo and reset", () => {
+  it("deletes raw tracks without deleting progress", () => {
     const database = openTestDatabase();
-    database.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)").run("s1", "walk", 1, 2, "completed");
+    database.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?)")
+      .run("s1", "ann-arbor", "v2", 1, 2, "completed");
     database.prepare(
       "INSERT INTO track_points(session_id, recorded_at, longitude, latitude, accuracy) VALUES (?, ?, ?, ?, ?)",
     ).run("s1", 1, -83.7, 42.2, 5);
-    database.prepare("INSERT INTO edge_progress VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run("v1", "walk", "edge-1", "ann-arbor", 4, 5, 1);
-    database.prepare("INSERT INTO exclusions VALUES (?, ?, ?, ?, ?)")
-      .run("edge-1", "ann-arbor", "walk", "unsafe", 2);
-    database.exec("DELETE FROM track_points; DELETE FROM exclusions;");
+    database.prepare("INSERT INTO edge_progress VALUES (?, ?, ?, ?, ?, ?)")
+      .run("ann-arbor", "v2", "edge-1", 4, 5, 1);
+    database.exec("DELETE FROM track_points");
     expect(scalar(database, "SELECT count(*) count FROM track_points")).toBe(0);
     expect(scalar(database, "SELECT count(*) count FROM edge_progress")).toBe(1);
-    expect(scalar(database, "SELECT count(*) count FROM exclusions")).toBe(0);
-    database.exec("DELETE FROM sessions; DELETE FROM visited_samples; DELETE FROM edge_progress; DELETE FROM landmark_unlocks; DELETE FROM city_completion_unlocks;");
-    expect(scalar(database, "SELECT count(*) count FROM edge_progress")).toBe(0);
     database.close();
   });
 });
@@ -81,4 +70,8 @@ function databasePath() {
 
 function scalar(database: DatabaseSync, sql: string) {
   return Number((database.prepare(sql).get() as { count: number }).count);
+}
+
+function columns(database: DatabaseSync, table: string) {
+  return database.prepare(`PRAGMA table_info(${table})`).all().map((row) => String((row as { name: string }).name));
 }

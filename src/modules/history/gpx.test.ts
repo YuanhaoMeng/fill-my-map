@@ -4,7 +4,7 @@ import { gpx } from "./gpx";
 describe("GPX export", () => {
   it("writes an ordered local track", () => {
     const output = gpx(
-      { id: "s1", mode: "walk", startedAt: 0, endedAt: 1, status: "completed", pointCount: 1 },
+      { id: "s1", cityId: "ann-arbor", regionVersion: "v2", startedAt: 0, endedAt: 1, status: "completed", pointCount: 1 },
       [
         {
           sessionId: "s1",

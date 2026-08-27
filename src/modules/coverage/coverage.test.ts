@@ -43,12 +43,12 @@ describe("coverage progress", () => {
 });
 
 describe("track cleaning", () => {
-  it("rejects inaccurate and implausibly fast walking fixes", () => {
+  it("rejects inaccurate and implausibly fast fixes", () => {
     const result = cleanTrack([
       point(),
       point({ recordedAt: 1_000, coordinate: [-83.7, 42.28] }),
       point({ recordedAt: 2_000, accuracyM: 80 }),
-    ], "walk");
+    ]);
     expect(result.points).toHaveLength(1);
     expect(result.rejectedPoints).toBe(2);
   });
@@ -57,7 +57,7 @@ describe("track cleaning", () => {
     const result = cleanTrack([
       point(),
       point({ recordedAt: 20_000, coordinate: [-83.7497, 42.28] }),
-    ], "walk");
+    ]);
     expect(result.points.length).toBeGreaterThan(3);
     expect(result.rejectedPoints).toBe(0);
   });
@@ -69,7 +69,7 @@ describe("coverage matching", () => {
     const result = await new DefaultCoverageMatcher().match([
       point(),
       point({ recordedAt: 5_000, coordinate: [-83.74995, 42.28] }),
-    ], "walk", async () => {
+    ], async () => {
       query += 1;
       return query === 1
         ? [candidate(), candidate({ id: "wrong", edgeId: "edge-b", edgeBearingDeg: 0, distanceM: 1 })]

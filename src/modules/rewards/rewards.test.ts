@@ -3,7 +3,7 @@ import type { TrackPoint } from "../../core/types";
 import { DefaultRewardEngine } from "./DefaultRewardEngine";
 
 describe("reward engine", () => {
-  it("unlocks a landmark in either travel mode", () => {
+  it("unlocks a nearby landmark", () => {
     const point: TrackPoint = {
       sessionId: "walk-session",
       recordedAt: 1,
@@ -12,15 +12,14 @@ describe("reward engine", () => {
       speedMps: 1,
       headingDeg: null,
     };
-    expect(new DefaultRewardEngine().unlockedLandmarks([point])).toContain("aa-stadium");
+    expect(new DefaultRewardEngine([{ id: "stadium", coordinate: [-83.7487, 42.2658], radiusM: 75 }]).unlockedLandmarks([point])).toContain("stadium");
   });
 
   it("requires a nonempty fully completed city", () => {
-    const engine = new DefaultRewardEngine();
+    const engine = new DefaultRewardEngine([]);
     expect(
       engine.cityCompleted({
         cityId: "ann-arbor",
-        mode: "walk",
         completedEdges: 9,
         eligibleEdges: 10,
         excludedEdges: 2,
@@ -30,7 +29,6 @@ describe("reward engine", () => {
     expect(
       engine.cityCompleted({
         cityId: "ann-arbor",
-        mode: "drive",
         completedEdges: 10,
         eligibleEdges: 10,
         excludedEdges: 0,

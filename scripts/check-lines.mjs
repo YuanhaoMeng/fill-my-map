@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const checked = /\.(?:[cm]?[jt]sx?|json|ya?ml|swift|rb|sh)$/;
 const extensionlessScripts = new Set(["tools/native/xcodebuild"]);
@@ -13,6 +13,7 @@ const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclud
   .filter(
     (file) =>
       file &&
+      existsSync(file) &&
       (checked.test(file) || extensionlessScripts.has(file)) &&
       !ignored.test(file) &&
       !generated.test(file),

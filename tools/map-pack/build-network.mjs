@@ -1,19 +1,23 @@
 import { rmSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
-import { cities, landmarks, pack } from "./config.mjs";
+import { cities, cityPackVersion, landmarks } from "./config.mjs";
 import { contains, midpoint, samplesAlong } from "./geometry.mjs";
 import { parseSequence } from "./lib.mjs";
 import { eligibleModes } from "./rules.mjs";
 import { schema } from "./schema.mjs";
 
-const [boundaryPath, roadPath, outputPath] = process.argv.slice(2);
-if (!boundaryPath || !roadPath || !outputPath) throw new Error("Usage: build-network boundaries roads output");
+const [boundaryPath, roadPath, outputPath, cityId] = process.argv.slice(2);
+if (!boundaryPath || !roadPath || !outputPath || !cityId) {
+  throw new Error("Usage: build-network boundaries roads output city-id");
+}
+const selectedCity = cities.find((city) => city.id === cityId);
+if (!selectedCity) throw new Error(`Unknown city: ${cityId}`);
 rmSync(outputPath, { force: true });
 const db = new DatabaseSync(outputPath);
 db.exec(schema);
 
 const boundaryFeatures = parseSequence(boundaryPath);
-const boundaries = cities.map((city) => {
+const boundaries = [selectedCity].map((city) => {
   const areaId = `a${city.relationId * 2 + 1}`;
   const feature = boundaryFeatures.find((item) => item.id === areaId || item.id === `r${city.relationId}`);
   if (!feature?.geometry) throw new Error(`Missing boundary relation ${city.relationId}`);
@@ -22,7 +26,7 @@ const boundaries = cities.map((city) => {
 
 const insertCity = db.prepare("INSERT INTO cities VALUES (?, ?, ?, ?)");
 boundaries.forEach((city) => insertCity.run(city.id, city.name, city.relationId, JSON.stringify(city.geometry)));
-db.prepare("INSERT INTO metadata VALUES (?, ?)").run("region_version", pack.version);
+db.prepare("INSERT INTO metadata VALUES (?, ?)").run("region_version", cityPackVersion);
 db.prepare("INSERT INTO metadata VALUES (?, ?)").run("attribution", "© OpenStreetMap contributors");
 
 const insertEdge = db.prepare("INSERT INTO edges VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -70,8 +74,8 @@ for (const feature of parseSequence(roadPath)) {
 db.exec("COMMIT");
 
 const insertLandmark = db.prepare("INSERT INTO landmarks VALUES (?, ?, ?, ?, ?, ?, ?)");
-landmarks.forEach(([id, cityId, name, longitude, latitude, osm]) =>
-  insertLandmark.run(id, cityId, name, longitude, latitude, 75, osm),
+landmarks.filter(([, landmarkCityId]) => landmarkCityId === cityId).forEach(([id, landmarkCityId, name, longitude, latitude, osm]) =>
+  insertLandmark.run(id, landmarkCityId, name, longitude, latitude, 75, osm),
 );
 db.exec("VACUUM");
 db.close();

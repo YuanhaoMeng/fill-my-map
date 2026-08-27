@@ -1,54 +1,57 @@
 import { rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { cities, pack } from "./config.mjs";
+import { cities, cityPackVersion, pack } from "./config.mjs";
 import { download, ensureDirectories, requireCommand, run, sha256 } from "./lib.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const cache = resolve(import.meta.dirname, "cache");
 const work = resolve(import.meta.dirname, "work");
-const output = resolve(root, "assets/regions/ann-arbor-ypsilanti");
-ensureDirectories(cache, work, output);
-["curl", "osmium", "pmtiles"].forEach(requireCommand);
+const outputRoot = resolve(root, "map-packs/cities");
+ensureDirectories(cache, work, outputRoot);
+["curl", "osmium", "pmtiles", "zip"].forEach(requireCommand);
 
 const source = resolve(cache, pack.osm.snapshot);
-const extract = resolve(work, "region.osm.pbf");
-const boundaries = resolve(work, "boundaries.geojsonseq");
-const roads = resolve(work, "roads.geojsonseq");
-const network = resolve(output, "network.sqlite");
-const basemap = resolve(output, "basemap.pmtiles");
-
 await download(pack.osm.url, source, pack.osm.md5);
-run("osmium", ["extract", "--overwrite", "--bbox", pack.bbox, "--strategy", "complete_ways", source, "-o", extract]);
-run("osmium", ["getid", "--overwrite", "--add-referenced", source, ...cities.map((city) => `r${city.relationId}`), "-o", resolve(work, "boundaries.osm.pbf")]);
-run("osmium", ["export", "--overwrite", "--add-unique-id", "type_id", resolve(work, "boundaries.osm.pbf"), "-o", boundaries]);
-run("osmium", ["tags-filter", "--overwrite", extract, "w/highway", "-o", resolve(work, "roads.osm.pbf")]);
-run("osmium", ["export", "--overwrite", "--add-unique-id", "type_id", resolve(work, "roads.osm.pbf"), "-o", roads]);
-run("node", [resolve(import.meta.dirname, "build-network.mjs"), boundaries, roads, network]);
-rmSync(basemap, { force: true });
-run("pmtiles", [
-  "extract",
-  pack.basemap.url,
-  basemap,
-  `--bbox=${pack.bbox}`,
-  `--maxzoom=${pack.basemap.maxZoom}`,
-]);
 
-const manifest = {
-  id: pack.id,
-  version: pack.version,
-  createdAt: pack.createdAt,
-  sha256: { basemap: await sha256(basemap), network: await sha256(network) },
-  source: { name: "Geofabrik Michigan / Protomaps Basemap", snapshot: pack.osm.snapshot, url: pack.osm.url },
-  license: {
-    data: "ODbL-1.0",
-    attribution: "© OpenStreetMap contributors",
-    url: "https://www.openstreetmap.org/copyright",
-  },
-  cities,
-};
-writeFileSync(resolve(output, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-writeFileSync(
-  resolve(output, "LICENSE.txt"),
-  "Map data © OpenStreetMap contributors, available under ODbL 1.0.\nBasemap produced with Protomaps.\nhttps://www.openstreetmap.org/copyright\n",
-);
-console.log(`Built ${output}`);
+for (const city of cities) {
+  const cityWork = resolve(work, city.id);
+  const output = resolve(outputRoot, city.id);
+  ensureDirectories(cityWork, output);
+  const extract = resolve(cityWork, "region.osm.pbf");
+  const boundaryPbf = resolve(cityWork, "boundary.osm.pbf");
+  const boundaries = resolve(cityWork, "boundaries.geojsonseq");
+  const roadsPbf = resolve(cityWork, "roads.osm.pbf");
+  const roads = resolve(cityWork, "roads.geojsonseq");
+  const network = resolve(output, "network.sqlite");
+  const basemap = resolve(output, "basemap.pmtiles");
+  run("osmium", ["extract", "--overwrite", "--bbox", city.bbox, "--strategy", "complete_ways", source, "-o", extract]);
+  run("osmium", ["getid", "--overwrite", "--add-referenced", source, `r${city.relationId}`, "-o", boundaryPbf]);
+  run("osmium", ["export", "--overwrite", "--add-unique-id", "type_id", boundaryPbf, "-o", boundaries]);
+  run("osmium", ["tags-filter", "--overwrite", extract, "w/highway", "-o", roadsPbf]);
+  run("osmium", ["export", "--overwrite", "--add-unique-id", "type_id", roadsPbf, "-o", roads]);
+  run("node", [resolve(import.meta.dirname, "build-network.mjs"), boundaries, roads, network, city.id]);
+  rmSync(basemap, { force: true });
+  run("pmtiles", ["extract", pack.basemap.url, basemap, `--bbox=${city.bbox}`, `--maxzoom=${pack.basemap.maxZoom}`]);
+  const manifest = {
+    formatVersion: 1,
+    id: city.id,
+    displayName: city.name,
+    version: cityPackVersion,
+    createdAt: pack.createdAt,
+    bounds: city.bbox.split(",").map(Number),
+    sha256: { basemap: await sha256(basemap), network: await sha256(network) },
+    source: { name: "Geofabrik Michigan / Protomaps Basemap", snapshot: pack.osm.snapshot, url: pack.osm.url },
+    license: {
+      data: "ODbL-1.0",
+      attribution: "© OpenStreetMap contributors",
+      url: "https://www.openstreetmap.org/copyright",
+    },
+    city: { id: city.id, name: city.name, relationId: city.relationId },
+  };
+  writeFileSync(resolve(output, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(
+    resolve(output, "LICENSE.txt"),
+    "Map data © OpenStreetMap contributors, available under ODbL 1.0.\nBasemap produced with Protomaps.\nhttps://www.openstreetmap.org/copyright\n",
+  );
+}
+run("node", [resolve(import.meta.dirname, "package-release.mjs")]);

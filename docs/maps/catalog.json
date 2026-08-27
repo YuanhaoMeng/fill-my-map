@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "cities": [
+    {
+      "id": "ann-arbor",
+      "displayName": "Ann Arbor",
+      "version": "2026.08.24-v2",
+      "sizeBytes": 9795743,
+      "sha256": "7b0f30370cb9ce5c4c45b99b0b0ba346627f7327a0cbf4fb77102b0e0c30954c",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.24-v2/ann-arbor-2026.08.24-v2.fillmap"
+    },
+    {
+      "id": "ypsilanti",
+      "displayName": "Ypsilanti",
+      "version": "2026.08.24-v2",
+      "sizeBytes": 2673426,
+      "sha256": "076c175f395d38703ab05d475eced819fa8217e2b0c6585bec9bd6297bc8fe75",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.24-v2/ypsilanti-2026.08.24-v2.fillmap"
+    }
+  ]
+}

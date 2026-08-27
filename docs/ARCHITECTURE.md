@@ -5,26 +5,46 @@
 ```text
 UI -> feature modules -> core contracts/types
                   \-> platform adapters -> Expo / MapLibre / SQLite
-map-pack tools -> generated immutable region assets
+map-pack tools -> immutable city packages -> GitHub Releases
+static catalog ---------------------------> GitHub Pages
 ```
 
-`src/core` has no React Native dependencies. Feature modules contain coverage, rewards, map styling, history export, and orchestration. Platform adapters are the only modules allowed to call location, file, sharing, or SQLite APIs.
+UI code never calls SQLite, location, files, or networking directly. Native APIs
+are isolated in `src/platform`; matching, progress, package validation, and share
+privacy rules remain testable TypeScript modules.
 
-## Databases
+## City packages
 
-`network.sqlite` is versioned with the region and treated as read-only at runtime. It contains city polygons, logical road edges, 15-metre coverage samples, an R-Tree, and ten curated landmarks.
+The App contains no city map. A user explicitly downloads a `.fillmap` archive
+from the static catalog or imports one with the iOS document picker. Installation
+uses a staging directory, a strict four-file allowlist, size limits, catalog and
+internal SHA-256 checks, then an atomic move. Installed packages contain:
 
-`fill-my-map.sqlite` is user-owned and writable. It stores sessions, raw track points, visited sample IDs scoped by region version and mode, completed edges, reversible exclusions, and permanent landmark unlocks.
+- `basemap.pmtiles`, opened by MapLibre through a local `pmtiles://file://` URI;
+- read-only `network.sqlite` with one boundary, roads, 15 m samples, R-Tree, and landmarks;
+- `manifest.json` and `LICENSE.txt` with ODbL source and attribution metadata.
 
-An edge is complete when at least 80% of its samples are visited. Walking and driving rows are independent. Exclusions lower the local denominator and remain visible.
+Multiple versions can coexist. One city is active; switching and deletion are
+blocked during an exploration. Deleting a map never deletes user progress.
+
+## User database
+
+`fill-my-map.sqlite` stores sessions, raw points, matched samples, completed
+roads, exclusions, and rewards. Coverage rows are scoped by `city_id` and
+`region_version`; there is no walking/driving mode. Schema v2 intentionally
+clears the incompatible v0.1 dual-mode database once.
+
+Every matched sample is persisted and rendered immediately. A logical road
+counts toward city progress only when at least 80% of its samples are visited.
 
 ## Runtime flow
 
-1. Validate the bundled PMTiles and network database against `manifest.json`.
-2. Load local PMTiles into MapLibre using `pmtiles://file://` and query roads from SQLite.
-3. On explicit start, request foreground and background location, then create a session.
-4. Clean and interpolate each location batch; query nearby R-Tree samples and score distance, heading, and continuity.
-5. Persist raw points and matched samples, recompute touched edges, unlock nearby landmarks, and repaint changed roads.
-6. On stop, flush queued work before completing the session.
+1. Open and verify the selected local package.
+2. Render its PMTiles, boundary, roads, coverage, and landmarks.
+3. On explicit Start, request location and create a city-scoped session.
+4. Clean/interpolate fixes, query nearby R-Tree samples, match, persist, and repaint.
+5. On Finish, flush work, fit the active-city boundary, hide location/raw track,
+   and capture a local share image with OSM attribution.
 
-There is no runtime network path in this design.
+The only runtime network path is an explicit static catalog or package download.
+No location or track is attached to that request, and no runtime map API exists.

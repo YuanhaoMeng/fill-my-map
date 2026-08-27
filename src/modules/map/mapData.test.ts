@@ -25,12 +25,12 @@ describe("offline map overlays", () => {
     expect(features.features[0]?.properties).toMatchObject({ id: "landmark", cityId: "ann-arbor" });
   });
 
-  it("renders partial samples as mode-colored road segments", () => {
+  it("renders partial samples as explored road segments", () => {
     const features = partialCoverageFeatures([
-      { id: "1", edgeId: "a", coordinate: [-83.7, 42.2], bearingDeg: 90, state: "walk" },
-      { id: "2", edgeId: "b", coordinate: [-83.6, 42.3], bearingDeg: 0, state: "drive" },
+      { id: "1", edgeId: "a", coordinate: [-83.7, 42.2], bearingDeg: 90 },
+      { id: "2", edgeId: "b", coordinate: [-83.6, 42.3], bearingDeg: 0 },
     ]);
-    expect(features.features.map((feature) => feature.properties?.state)).toEqual(["walk", "drive"]);
+    expect(features.features.map((feature) => feature.properties?.state)).toEqual(["explored"]);
     expect(features.features[0]?.geometry.coordinates[0]).toHaveLength(2);
   });
 });

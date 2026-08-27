@@ -1,29 +1,16 @@
 import type {
-  CityProgress,
   CityCompletionUnlock,
+  CityProgress,
   CoverageEdge,
   CoverageSample,
+  CoverageSegment,
+  CoverageVisualState,
   EdgeExclusion,
   LandmarkUnlock,
-  RegionManifest,
-  TrackingSession,
   SessionSummary,
+  TrackingSession,
   TrackPoint,
-  TravelMode,
-  CoverageVisualState,
-  CoverageSegment,
 } from "./types";
-
-export interface RegionFiles {
-  manifest: RegionManifest;
-  basemapUri: string;
-  networkUri: string;
-}
-
-export interface RegionRepository {
-  loadBundled(): Promise<RegionFiles>;
-  verify(files: RegionFiles): Promise<void>;
-}
 
 export interface LocationRecorder {
   requestPermission(): Promise<boolean>;
@@ -46,26 +33,25 @@ export interface MatchResult {
 export interface CoverageMatcher {
   match(
     points: readonly TrackPoint[],
-    mode: TravelMode,
     nearby: (point: TrackPoint) => Promise<readonly MatchCandidate[]>,
   ): Promise<MatchResult>;
 }
 
 export interface ProgressRepository {
-  createSession(mode: TravelMode): Promise<TrackingSession>;
+  createSession(): Promise<TrackingSession>;
   finishSession(id: string, status: TrackingSession["status"]): Promise<void>;
   appendTrack(points: readonly TrackPoint[]): Promise<void>;
-  saveVisitedSamples(regionVersion: string, mode: TravelMode, ids: readonly string[]): Promise<void>;
-  getCityProgress(cityId: string, mode: TravelMode): Promise<CityProgress>;
+  saveVisitedSamples(ids: readonly string[]): Promise<void>;
+  getCityProgress(): Promise<CityProgress>;
   exclude(exclusion: EdgeExclusion): Promise<void>;
-  undoExclusion(edgeId: string, mode: TravelMode): Promise<void>;
+  undoExclusion(edgeId: string): Promise<void>;
 }
 
 export interface RewardRepository {
   unlockLandmark(unlock: LandmarkUnlock): Promise<void>;
   unlockCityCompletion(unlock: CityCompletionUnlock): Promise<void>;
   listLandmarkUnlocks(): Promise<readonly { landmark_id: string; unlocked_at: number; session_id: string }[]>;
-  listCityCompletionUnlocks(): Promise<readonly { city_id: string; mode: TravelMode; unlocked_at: number; session_id: string }[]>;
+  listCityCompletionUnlocks(): Promise<readonly { city_id: string; unlocked_at: number; session_id: string }[]>;
 }
 
 export interface RewardEngine {
@@ -79,7 +65,7 @@ export interface ShareCardRenderer {
 }
 
 export interface NetworkRepository {
-  nearbySamples(point: TrackPoint, mode: TravelMode): Promise<readonly MatchCandidate[]>;
+  nearbySamples(point: TrackPoint): Promise<readonly MatchCandidate[]>;
   listEdges(cityId: string): Promise<readonly CoverageEdge[]>;
 }
 
@@ -94,9 +80,9 @@ export interface ResolvedSample {
 
 export interface CoverageCatalog {
   resolveSamples(ids: readonly string[]): Promise<readonly ResolvedSample[]>;
-  countEligibleEdges(cityId: string, mode: TravelMode): Promise<number>;
+  countEligibleEdges(cityId: string): Promise<number>;
   edgeCity(edgeId: string): Promise<string | null>;
-  edgeEligible(edgeId: string, mode: TravelMode): Promise<boolean>;
+  edgeEligible(edgeId: string): Promise<boolean>;
 }
 
 export interface CoverageStateRepository {

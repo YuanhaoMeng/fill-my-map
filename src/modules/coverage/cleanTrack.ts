@@ -1,22 +1,22 @@
 import { bearingDeg, distanceM, interpolate } from "../../core/geo";
-import type { Coordinate, TrackPoint, TravelMode } from "../../core/types";
+import type { Coordinate, TrackPoint } from "../../core/types";
 
 interface CleanTrackResult {
   points: readonly TrackPoint[];
   rejectedPoints: number;
 }
 
-const MAX_ACCURACY_M: Record<TravelMode, number> = { walk: 25, drive: 30 };
-const MAX_SPEED_MPS: Record<TravelMode, number> = { walk: 4.5, drive: 60 };
+const MAX_ACCURACY_M = 30;
+const MAX_SPEED_MPS = 60;
 const MAX_INTERPOLATION_GAP_S = 60;
 const INTERPOLATION_SPACING_M = 10;
 
-export function cleanTrack(points: readonly TrackPoint[], mode: TravelMode): CleanTrackResult {
+export function cleanTrack(points: readonly TrackPoint[]): CleanTrackResult {
   const cleaned: TrackPoint[] = [];
   let rejectedPoints = 0;
   for (const rawPoint of points) {
     const point = normalize(rawPoint);
-    if (!isUsable(point, mode)) {
+    if (!isUsable(point)) {
       rejectedPoints += 1;
       continue;
     }
@@ -27,7 +27,7 @@ export function cleanTrack(points: readonly TrackPoint[], mode: TravelMode): Cle
     }
     const elapsedS = (point.recordedAt - previous.recordedAt) / 1_000;
     const distance = distanceM(previous.coordinate, point.coordinate);
-    if (elapsedS <= 0 || distance / elapsedS > MAX_SPEED_MPS[mode]) {
+    if (elapsedS <= 0 || distance / elapsedS > MAX_SPEED_MPS) {
       rejectedPoints += 1;
       continue;
     }
@@ -48,7 +48,7 @@ function normalize(point: TrackPoint): TrackPoint {
   return { ...point, speedMps, headingDeg };
 }
 
-function isUsable(point: TrackPoint, mode: TravelMode) {
+function isUsable(point: TrackPoint) {
   const [longitude, latitude] = point.coordinate;
   return (
     finite(longitude) &&
@@ -60,8 +60,8 @@ function isUsable(point: TrackPoint, mode: TravelMode) {
     finite(point.recordedAt) &&
     finite(point.accuracyM) &&
     point.accuracyM >= 0 &&
-    point.accuracyM <= MAX_ACCURACY_M[mode] &&
-    (point.speedMps === null || point.speedMps <= MAX_SPEED_MPS[mode])
+    point.accuracyM <= MAX_ACCURACY_M &&
+    (point.speedMps === null || point.speedMps <= MAX_SPEED_MPS)
   );
 }
 

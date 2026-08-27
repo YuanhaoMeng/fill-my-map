@@ -6,8 +6,9 @@ import type {
   ProgressRepository,
   RewardRepository,
 } from "../../core/contracts";
-import type { TrackPoint, TravelMode } from "../../core/types";
+import type { TrackPoint } from "../../core/types";
 import { ExplorationService } from "./ExplorationService";
+import { DefaultRewardEngine } from "../rewards/DefaultRewardEngine";
 
 class SyntheticRecorder implements LocationRecorder {
   private listener: ((points: readonly TrackPoint[]) => void) | null = null;
@@ -31,14 +32,14 @@ describe("two-hour synthetic exploration", () => {
     const refreshedEdges = new Set<string>();
     let finalStatus = "";
     const progress: ProgressRepository & CoverageStateRepository = {
-      async createSession(mode) {
-        return { id: "synthetic", mode, startedAt: 0, endedAt: null, status: "active" };
+      async createSession() {
+        return { id: "synthetic", cityId: "ann-arbor", regionVersion: "test-v1", startedAt: 0, endedAt: null, status: "active" };
       },
       async finishSession(_id, status) { finalStatus = status; },
       async appendTrack(points) { stored.push(...points); },
-      async saveVisitedSamples(_version, _mode, ids) { ids.forEach((id) => visited.add(id)); },
-      async getCityProgress(cityId, mode) {
-        return { cityId, mode, completedEdges: 0, eligibleEdges: 1, excludedEdges: 0, percent: 0 };
+      async saveVisitedSamples(ids) { ids.forEach((id) => visited.add(id)); },
+      async getCityProgress() {
+        return { cityId: "ann-arbor", completedEdges: 0, eligibleEdges: 1, excludedEdges: 0, percent: 0 };
       },
       async exclude() {},
       async undoExclusion() {},
@@ -60,11 +61,11 @@ describe("two-hour synthetic exploration", () => {
       async listCityCompletionUnlocks() { return []; },
     };
     const service = new ExplorationService(
-      "test-v1", recorder, network, progress, rewards, () => {},
+      "ann-arbor", recorder, network, progress, rewards, new DefaultRewardEngine([]), () => {},
       (ids) => ids.forEach((id) => refreshedEdges.add(id)),
     );
-    const track = twoHourTrack("walk");
-    await service.start("walk");
+    const track = twoHourTrack();
+    await service.start();
     for (let offset = 0; offset < track.length; offset += 60) recorder.emit(track.slice(offset, offset + 60));
     await service.stop();
     expect(stored).toHaveLength(1_441);
@@ -79,18 +80,19 @@ describe("two-hour synthetic exploration", () => {
     let createdSessions = 0;
     const progress = testProgress(() => { createdSessions += 1; });
     const service = new ExplorationService(
-      "test-v1",
+      "ann-arbor",
       recorder,
       { async nearbySamples() { return []; }, async listEdges() { return []; } },
       progress,
       emptyRewards(),
+      new DefaultRewardEngine([]),
       () => {},
       () => {},
     );
-    await expect(service.start("walk")).rejects.toThrow("location_permission_denied");
+    await expect(service.start()).rejects.toThrow("location_permission_denied");
     expect(createdSessions).toBe(0);
     recorder.permission = true;
-    await service.start("walk");
+    await service.start();
     await service.stop();
     expect(createdSessions).toBe(1);
   });
@@ -102,22 +104,23 @@ describe("two-hour synthetic exploration", () => {
     progress.appendTrack = async () => { throw new Error("storage_failure"); };
     progress.finishSession = async (_id, status) => { finalStatus = status; };
     const service = new ExplorationService(
-      "test-v1",
+      "ann-arbor",
       recorder,
       { async nearbySamples() { return []; }, async listEdges() { return []; } },
       progress,
       emptyRewards(),
+      new DefaultRewardEngine([]),
       () => {},
       () => {},
     );
-    await service.start("walk");
-    recorder.emit([twoHourTrack("walk")[0]!]);
+    await service.start();
+    recorder.emit([twoHourTrack()[0]!]);
     await expect(service.stop()).rejects.toThrow("storage_failure");
     expect(finalStatus).toBe("interrupted");
   });
 });
 
-function twoHourTrack(mode: TravelMode): TrackPoint[] {
+function twoHourTrack(): TrackPoint[] {
   const latitude = 42.28;
   const longitudeStep = 5 / (111_320 * Math.cos((latitude * Math.PI) / 180));
   return Array.from({ length: 1_441 }, (_, index) => ({
@@ -125,20 +128,20 @@ function twoHourTrack(mode: TravelMode): TrackPoint[] {
     recordedAt: index * 5_000,
     coordinate: [-83.75 + longitudeStep * index, latitude],
     accuracyM: 5,
-    speedMps: mode === "walk" ? 1 : 10,
+    speedMps: 1,
     headingDeg: 90,
   }));
 }
 
 function testProgress(onCreate: () => void): ProgressRepository & CoverageStateRepository {
   return {
-    async createSession(mode) {
+    async createSession() {
       onCreate();
-      return { id: "retry", mode, startedAt: 0, endedAt: null, status: "active" };
+      return { id: "retry", cityId: "ann-arbor", regionVersion: "test-v1", startedAt: 0, endedAt: null, status: "active" };
     },
     async finishSession() {}, async appendTrack() {}, async saveVisitedSamples() {},
-    async getCityProgress(cityId, mode) {
-      return { cityId, mode, completedEdges: 0, eligibleEdges: 1, excludedEdges: 0, percent: 0 };
+    async getCityProgress() {
+      return { cityId: "ann-arbor", completedEdges: 0, eligibleEdges: 1, excludedEdges: 0, percent: 0 };
     },
     async exclude() {}, async undoExclusion() {}, async recoverInterruptedSessions() {},
     async getEdgeStates() { return {}; },

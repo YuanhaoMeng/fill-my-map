@@ -1,10 +1,15 @@
 import type { RewardEngine } from "../../core/contracts";
 import { distanceM } from "../../core/geo";
-import type { CityProgress, TrackPoint } from "../../core/types";
-import { landmarks, type Landmark } from "./landmarks";
+import type { CityProgress, Coordinate, TrackPoint } from "../../core/types";
+
+export interface RewardLandmark {
+  id: string;
+  coordinate: Coordinate;
+  radiusM: number;
+}
 
 export class DefaultRewardEngine implements RewardEngine {
-  constructor(private readonly configuredLandmarks: readonly Landmark[] = landmarks) {}
+  constructor(private readonly configuredLandmarks: readonly RewardLandmark[]) {}
 
   cityCompleted(progress: CityProgress) {
     return progress.eligibleEdges > 0 && progress.completedEdges >= progress.eligibleEdges;

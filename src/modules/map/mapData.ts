@@ -1,6 +1,6 @@
 import type { FeatureCollection, LineString, MultiLineString, MultiPolygon, Point, Polygon } from "geojson";
-import type { CoverageEdge, CoverageModeState, CoverageSegment, CoverageVisualState, TrackPoint } from "../../core/types";
-import type { MapCityBoundary, MapLandmark } from "../../platform/database/BundledNetworkRepository";
+import type { CoverageEdge, CoverageSegment, CoverageVisualState, TrackPoint } from "../../core/types";
+import type { MapCityBoundary, MapLandmark } from "../../platform/database/CityNetworkRepository";
 
 export function cityBoundaryFeatures(items: readonly MapCityBoundary[]): FeatureCollection<Polygon | MultiPolygon> {
   return {
@@ -23,7 +23,7 @@ export function edgeFeatures(
     features: edges.map((edge) => ({
       type: "Feature",
       id: edge.id,
-      properties: { id: edge.id, modes: edge.modes.join(","), state: states[edge.id] ?? "unvisited" },
+      properties: { id: edge.id, state: states[edge.id] ?? "unvisited" },
       geometry: { type: "LineString", coordinates: edge.coordinates.map(([lon, lat]) => [lon, lat]) },
     })),
   };
@@ -32,15 +32,11 @@ export function edgeFeatures(
 export function partialCoverageFeatures(
   segments: readonly CoverageSegment[],
 ): FeatureCollection<MultiLineString> {
-  const states: readonly CoverageModeState[] = ["walk", "drive", "both"];
   return {
     type: "FeatureCollection",
-    features: states.flatMap((state) => {
-      const coordinates = segments.filter((item) => item.state === state).map(sampleLine);
-      return coordinates.length
-        ? [{ type: "Feature" as const, id: state, properties: { state }, geometry: { type: "MultiLineString" as const, coordinates } }]
-        : [];
-    }),
+    features: segments.length
+      ? [{ type: "Feature", id: "explored", properties: { state: "explored" }, geometry: { type: "MultiLineString", coordinates: segments.map(sampleLine) } }]
+      : [],
   };
 }
 

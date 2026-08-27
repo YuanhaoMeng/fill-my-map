@@ -6,20 +6,24 @@ import { OfflineMap } from "./OfflineMap";
 import { theme } from "./theme";
 import { promptExclusion } from "./exclusionPrompt";
 import { DataControlsModal } from "./DataControlsModal";
-import { ShareProgressModal } from "./ShareProgressModal";
-import type { CityProgress } from "../core/types";
 import { RewardsModal } from "./RewardsModal";
 import { MissingRoadsModal } from "./MissingRoadsModal";
 import { AboutModal } from "./AboutModal";
+import { CityMapsModal } from "./CityMapsModal";
+import { MoreMenuModal } from "./MoreMenuModal";
+import { ExplorationShareModal } from "./ExplorationShareModal";
 
 export function HomeScreen() {
   const { t } = useMessages();
   const runtime = useAppRuntime();
   const [showData, setShowData] = useState(false);
-  const [shareProgress, setShareProgress] = useState<CityProgress | null>(null);
   const [showRewards, setShowRewards] = useState(false);
   const [showMissing, setShowMissing] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showMaps, setShowMaps] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [captureRequest, setCaptureRequest] = useState(0);
+  const [shareImage, setShareImage] = useState<string | null>(null);
   const disabled = runtime.status !== "ready";
   return (
     <SafeAreaView style={styles.screen}>
@@ -33,40 +37,30 @@ export function HomeScreen() {
           onEdgeLongPress={(id, state) =>
             promptExclusion(id, state, t, runtime.exclude, runtime.undoExclusion)
           }
+          captureRequest={captureRequest}
+          onCapture={setShareImage}
         />
         <Text style={styles.logo}>{t("appName")}</Text>
       </View>
       <View style={styles.panel}>
         <Text style={styles.privacy}>{runtime.session ? t("recording") : t("privacy")}</Text>
         {runtime.progress.map((progress) => (
-          <TouchableOpacity accessibilityRole="button" key={`${progress.cityId}-${progress.mode}`} style={styles.progressRow} onPress={() => setShareProgress(progress)}>
-            <Text style={styles.city}>{t(progress.cityId === "ann-arbor" ? "annArbor" : "ypsilanti")} · {t(progress.mode)}</Text>
+          <View key={progress.cityId} style={styles.progressRow}>
+            <Text style={styles.city}>{runtime.maps.active?.manifest.displayName ?? progress.cityId}</Text>
             <Text style={styles.percent}>{progress.percent.toFixed(2)}% {t("explored")}</Text>
-          </TouchableOpacity>
+          </View>
         ))}
         {runtime.actionError ? <Text style={styles.error}>{t("permissionDenied")}</Text> : null}
         <View style={styles.actions}>
           {runtime.session ? (
-            <Action color={theme.colors.both} label={t("stop")} onPress={() => void runtime.stop()} />
+            <Action color={theme.colors.explored} label={t("stop")} onPress={() => void runtime.stop().then(() => setCaptureRequest((value) => value + 1))} />
           ) : (
-            <>
-              <Action disabled={disabled} color={theme.colors.walk} label={t("startWalk")} onPress={() => void runtime.start("walk")} />
-              <Action disabled={disabled} color={theme.colors.drive} label={t("startDrive")} onPress={() => void runtime.start("drive")} />
-            </>
+            <Action disabled={disabled} color={theme.colors.explored} label={t("startExplore")} onPress={() => void runtime.start()} />
           )}
         </View>
         <Text style={styles.attribution}>{t("attribution")}</Text>
-        <TouchableOpacity accessibilityRole="button" disabled={Boolean(runtime.session)} onPress={() => setShowData(true)}>
-          <Text style={[styles.manage, runtime.session && styles.disabled]}>{t("manageData")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={() => setShowMissing(true)}>
-          <Text style={styles.manage}>{t("missingRoads")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={() => setShowRewards(true)}>
-          <Text style={styles.manage}>{t("rewards")} · {runtime.rewards.length}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={() => setShowAbout(true)}>
-          <Text style={styles.manage}>{t("aboutLicenses")}</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={() => setShowMenu(true)}>
+          <Text style={styles.manage}>{t("menu")}</Text>
         </TouchableOpacity>
       </View>
       <DataControlsModal
@@ -79,10 +73,40 @@ export function HomeScreen() {
         deleteAllTracks={runtime.deleteAllTracks}
         resetAllData={runtime.resetAllData}
       />
-      <ShareProgressModal progress={shareProgress} onClose={() => setShareProgress(null)} />
-      <RewardsModal visible={showRewards} rewards={runtime.rewards} onClose={() => setShowRewards(false)} />
+      <RewardsModal visible={showRewards} rewards={runtime.rewards} cityName={runtime.maps.active?.manifest.displayName} onClose={() => setShowRewards(false)} />
       <MissingRoadsModal visible={showMissing} onClose={() => setShowMissing(false)} load={runtime.listMissing} />
       <AboutModal visible={showAbout} onClose={() => setShowAbout(false)} />
+      <CityMapsModal
+        visible={runtime.status === "needs-map" || showMaps}
+        required={runtime.status === "needs-map"}
+        catalog={runtime.maps.catalog}
+        installed={runtime.maps.installed}
+        active={runtime.maps.active}
+        downloadProgress={runtime.maps.downloadProgress}
+        error={runtime.actionError}
+        onClose={() => setShowMaps(false)}
+        onDownload={runtime.downloadMap}
+        onImport={runtime.importMap}
+        onActivate={runtime.activateMap}
+        onDelete={runtime.deleteMap}
+      />
+      <MoreMenuModal
+        visible={showMenu}
+        sessionActive={Boolean(runtime.session)}
+        rewardCount={runtime.rewards.length}
+        onClose={() => setShowMenu(false)}
+        onMaps={() => { setShowMenu(false); setShowMaps(true); }}
+        onData={() => { setShowMenu(false); setShowData(true); }}
+        onMissing={() => { setShowMenu(false); setShowMissing(true); }}
+        onRewards={() => { setShowMenu(false); setShowRewards(true); }}
+        onAbout={() => { setShowMenu(false); setShowAbout(true); }}
+      />
+      <ExplorationShareModal
+        imageUri={shareImage}
+        cityName={runtime.maps.active?.manifest.displayName ?? ""}
+        progress={runtime.progress[0]}
+        onClose={() => setShareImage(null)}
+      />
     </SafeAreaView>
   );
 }

@@ -57,7 +57,7 @@ export function DataControlsModal(props: Props) {
         <ScrollView contentContainerStyle={styles.list}>
           {sessions.length ? sessions.map((session) => (
             <View key={session.id} style={styles.session}>
-              <Text style={styles.sessionTitle}>{t(session.mode)} · {new Date(session.startedAt).toLocaleString()}</Text>
+              <Text style={styles.sessionTitle}>{new Date(session.startedAt).toLocaleString()}</Text>
               <Text style={styles.note}>{session.pointCount} {t("trackPoints")} · {session.status}</Text>
               <View style={styles.row}>
                 <SmallButton label={t("view")} onPress={() => void props.view(session).then(props.onClose)} />

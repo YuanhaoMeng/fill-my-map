@@ -1,54 +1,93 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
-import { cities, landmarks, pack } from "./config.mjs";
+import { resolve } from "node:path";
+import { cities, cityPackVersion } from "./config.mjs";
 import { sha256 } from "./lib.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
-const directory = resolve(root, "assets/regions/ann-arbor-ypsilanti");
-const paths = {
-  manifest: resolve(directory, "manifest.json"),
-  network: resolve(directory, "network.sqlite"),
-  basemap: resolve(directory, "basemap.pmtiles"),
-  license: resolve(directory, "LICENSE.txt"),
-};
-Object.values(paths).forEach((path) => {
-  if (!existsSync(path)) throw new Error(`Missing map-pack artifact: ${path}`);
-});
+const catalog = JSON.parse(readFileSync(resolve(root, "docs/maps/catalog.json"), "utf8"));
+if (catalog.formatVersion !== 1 || catalog.cities.length !== cities.length) throw new Error("Unexpected city catalog");
 
-const manifest = JSON.parse(readFileSync(paths.manifest, "utf8"));
-if (manifest.version !== pack.version) throw new Error("Unexpected map-pack version");
-if ((await sha256(paths.network)) !== manifest.sha256.network) throw new Error("network.sqlite hash mismatch");
-if ((await sha256(paths.basemap)) !== manifest.sha256.basemap) throw new Error("basemap.pmtiles hash mismatch");
-if (manifest.license?.data !== "ODbL-1.0") throw new Error("Missing ODbL metadata");
-if (manifest.license?.attribution !== "© OpenStreetMap contributors") throw new Error("Missing attribution");
-
-const tileMetadata = JSON.parse(execFileSync("pmtiles", ["show", paths.basemap, "--metadata"], { encoding: "utf8" }));
-const tileHeader = JSON.parse(execFileSync("pmtiles", ["show", paths.basemap, "--header-json"], { encoding: "utf8" }));
-const layers = new Set(tileMetadata.vector_layers?.map((layer) => layer.id));
-if (!layers.has("roads") || !layers.has("boundaries")) throw new Error("Basemap lacks roads or boundaries");
-if (tileMetadata.attribution?.includes("OpenStreetMap") !== true) throw new Error("Basemap lacks OSM attribution");
-if (tileHeader.maxzoom !== pack.basemap.maxZoom) throw new Error("Unexpected basemap maximum zoom");
-if (tileHeader.bounds.join(",") !== pack.bbox.split(",").map(Number).join(",")) throw new Error("Unexpected basemap bounds");
-
-const db = new DatabaseSync(paths.network, { readOnly: true });
+let totalEdges = 0;
+let totalSamples = 0;
+let totalLandmarks = 0;
 for (const city of cities) {
-  const row = db.prepare("SELECT relation_id, geometry_json FROM cities WHERE id = ?").get(city.id);
-  if (row?.relation_id !== city.relationId) throw new Error(`Missing city ${city.name}`);
-  const geometry = JSON.parse(row.geometry_json);
-  if (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon") throw new Error(`Invalid ${city.name} boundary`);
-  for (const mode of ["walk", "drive"]) {
-    const count = db.prepare(`SELECT count(*) count FROM edges WHERE city_id = ? AND ${mode} = 1`).get(city.id).count;
-    if (count <= 0) throw new Error(`${city.name} has no ${mode} network`);
+  const directory = resolve(root, "map-packs/cities", city.id);
+  const paths = Object.fromEntries(
+    ["manifest.json", "network.sqlite", "basemap.pmtiles", "LICENSE.txt"]
+      .map((name) => [name, resolve(directory, name)]),
+  );
+  Object.values(paths).forEach((path) => {
+    if (!existsSync(path)) throw new Error(`Missing city-pack artifact: ${path}`);
+  });
+  const manifest = JSON.parse(readFileSync(paths["manifest.json"], "utf8"));
+  await validateManifest(manifest, city, paths);
+  validateTiles(paths["basemap.pmtiles"], city.bbox);
+  const counts = validateNetwork(paths["network.sqlite"], city);
+  totalEdges += counts.edges;
+  totalSamples += counts.samples;
+  totalLandmarks += counts.landmarks;
+  const entry = catalog.cities.find((item) => item.id === city.id);
+  if (entry?.version !== cityPackVersion) {
+    throw new Error(`Catalog mismatch for ${city.name}`);
+  }
+  await validateArchive(city, entry);
+}
+console.log(
+  `Map-pack verification passed: ${cities.length} cities, ${totalLandmarks} landmarks, ` +
+  `${totalEdges} roads, ${totalSamples} samples.`,
+);
+
+async function validateManifest(manifest, city, paths) {
+  if (manifest.formatVersion !== 1 || manifest.id !== city.id || manifest.version !== cityPackVersion) {
+    throw new Error(`Unexpected manifest for ${city.name}`);
+  }
+  if ((await sha256(paths["network.sqlite"])) !== manifest.sha256.network) {
+    throw new Error(`${city.name} network hash mismatch`);
+  }
+  if ((await sha256(paths["basemap.pmtiles"])) !== manifest.sha256.basemap) {
+    throw new Error(`${city.name} basemap hash mismatch`);
+  }
+  if (manifest.license?.data !== "ODbL-1.0" || manifest.license?.attribution !== "© OpenStreetMap contributors") {
+    throw new Error(`Missing license metadata for ${city.name}`);
   }
 }
-const landmarkRows = db.prepare("SELECT id, osm_ref FROM landmarks ORDER BY id").all();
-if (landmarkRows.length !== landmarks.length || new Set(landmarkRows.map((row) => row.id)).size !== 10) {
-  throw new Error("Map pack must contain ten unique landmarks");
+
+function validateTiles(path, bbox) {
+  const metadata = JSON.parse(execFileSync("pmtiles", ["show", path, "--metadata"], { encoding: "utf8" }));
+  const header = JSON.parse(execFileSync("pmtiles", ["show", path, "--header-json"], { encoding: "utf8" }));
+  const layers = new Set(metadata.vector_layers?.map((layer) => layer.id));
+  if (!layers.has("roads") || !layers.has("boundaries")) throw new Error("Basemap lacks required layers");
+  if (!metadata.attribution?.includes("OpenStreetMap")) throw new Error("Basemap lacks OSM attribution");
+  if (header.maxzoom !== 15 || header.bounds.join(",") !== bbox) throw new Error("Unexpected basemap bounds");
 }
-const edgeCount = db.prepare("SELECT count(*) count FROM edges").get().count;
-const sampleCount = db.prepare("SELECT count(*) count FROM samples").get().count;
-if (edgeCount !== 5_502 || sampleCount !== 81_930) throw new Error("Unexpected road or coverage sample count");
-db.close();
-console.log(`Map-pack verification passed: ${cities.length} cities, ${landmarkRows.length} landmarks, ${edgeCount} roads, ${sampleCount} samples.`);
+
+function validateNetwork(path, city) {
+  const db = new DatabaseSync(path, { readOnly: true });
+  const found = db.prepare("SELECT relation_id FROM cities WHERE id=?").get(city.id);
+  if (found?.relation_id !== city.relationId) throw new Error(`Missing boundary for ${city.name}`);
+  const edges = Number(db.prepare("SELECT count(*) count FROM edges").get().count);
+  const samples = Number(db.prepare("SELECT count(*) count FROM samples").get().count);
+  const landmarks = Number(db.prepare("SELECT count(*) count FROM landmarks").get().count);
+  db.close();
+  if (edges !== city.expected.edges || samples !== city.expected.samples || landmarks !== city.expected.landmarks) {
+    throw new Error(`Unexpected network counts for ${city.name}`);
+  }
+  return { edges, samples, landmarks };
+}
+
+function fileSize(path) {
+  return Number(execFileSync("stat", ["-f", "%z", path], { encoding: "utf8" }).trim());
+}
+
+async function validateArchive(city, entry) {
+  const archive = resolve(root, "map-packs/releases", `${city.id}-${cityPackVersion}.fillmap`);
+  if (!existsSync(archive) || entry.sizeBytes !== fileSize(archive) || entry.sha256 !== await sha256(archive)) {
+    throw new Error(`Release archive mismatch for ${city.name}`);
+  }
+  const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" }).trim().split("\n").sort();
+  if (names.join(",") !== ["LICENSE.txt", "basemap.pmtiles", "manifest.json", "network.sqlite"].join(",")) {
+    throw new Error(`Unexpected release archive contents for ${city.name}`);
+  }
+}

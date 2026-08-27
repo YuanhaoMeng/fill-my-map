@@ -5,31 +5,37 @@ import type {
   RewardState,
   MissingEdge,
   TrackingSession,
-  TravelMode,
   Coordinate,
 } from "../../core/types";
 import type { ExplorationService } from "../exploration/ExplorationService";
 import type { LocalProgressRepository } from "../../platform/database/LocalProgressRepository";
 import type { LocalTrackHistoryRepository } from "../../platform/database/LocalTrackHistoryRepository";
+import type { CityCatalogEntry, InstalledCity } from "../regions/cityPackTypes";
 
 export interface MapContent {
+  bounds: readonly [number, number, number, number];
   style: StyleSpecification;
   boundaries: FeatureCollection<Polygon | MultiPolygon>;
   edges: FeatureCollection<LineString>;
   partialCoverage: FeatureCollection<MultiLineString>;
   landmarks: FeatureCollection<Point>;
   history?: FeatureCollection<LineString>;
-  historyMode?: TravelMode;
 }
 
 export interface RuntimeState {
-  status: "loading" | "ready" | "error";
+  status: "loading" | "needs-map" | "ready" | "error";
   map?: MapContent;
   session: TrackingSession | null;
   progress: readonly CityProgress[];
   actionError: string | null;
   rewards: readonly RewardState[];
   userCoordinate?: Coordinate;
+  maps: {
+    catalog: readonly CityCatalogEntry[];
+    installed: readonly InstalledCity[];
+    active: InstalledCity | null;
+    downloadProgress?: number;
+  };
 }
 
 export interface RuntimeResources {
@@ -39,5 +45,6 @@ export interface RuntimeResources {
   refresh?: (ids?: readonly string[], reset?: boolean) => Promise<void>;
   refreshRewards?: () => Promise<void>;
   loadProgress?: () => Promise<readonly CityProgress[]>;
-  listMissing?: (cityId: string, mode: TravelMode) => Promise<readonly MissingEdge[]>;
+  listMissing?: () => Promise<readonly MissingEdge[]>;
+  dispose?: () => Promise<void>;
 }

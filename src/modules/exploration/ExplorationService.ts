@@ -1,7 +1,6 @@
-import type { CoverageStateRepository, LocationRecorder, NetworkRepository, ProgressRepository, RewardRepository } from "../../core/contracts";
-import type { CityProgress, Coordinate, TrackingSession, TrackPoint, TravelMode } from "../../core/types";
+import type { CoverageStateRepository, LocationRecorder, NetworkRepository, ProgressRepository, RewardEngine, RewardRepository } from "../../core/contracts";
+import type { CityProgress, Coordinate, TrackingSession, TrackPoint } from "../../core/types";
 import { DefaultCoverageMatcher } from "../coverage/DefaultCoverageMatcher";
-import { DefaultRewardEngine } from "../rewards/DefaultRewardEngine";
 import { cleanTrack } from "../coverage/cleanTrack";
 
 export interface ExplorationUpdate {
@@ -18,20 +17,21 @@ export class ExplorationService {
   private lastPoint: TrackPoint | null = null;
 
   constructor(
-    private readonly regionVersion: string,
+    private readonly cityId: string,
     private readonly recorder: LocationRecorder,
     private readonly network: NetworkRepository,
     private readonly progress: ProgressRepository & CoverageStateRepository,
     private readonly rewards: RewardRepository,
+    private readonly rewardEngine: RewardEngine,
     private readonly onUpdate: (update: ExplorationUpdate) => void,
     private readonly onCoverage: (edgeIds: readonly string[]) => Promise<void> | void,
     private readonly onLocation: (coordinate: Coordinate) => void = () => undefined,
   ) {}
 
-  async start(mode: TravelMode) {
+  async start() {
     if (this.session) return;
     if (!(await this.recorder.requestPermission())) throw new Error("location_permission_denied");
-    this.session = await this.progress.createSession(mode);
+    this.session = await this.progress.createSession();
     this.unsubscribe = this.recorder.subscribe((points) => {
       this.pending = this.pending.then(async () => {
         if (this.processingError) return;
@@ -77,36 +77,29 @@ export class ExplorationService {
   private async process(points: readonly TrackPoint[]) {
     if (!this.session || !points.length) return;
     await this.progress.appendTrack(points);
-    const cleaned = cleanTrack(points, this.session.mode).points;
+    const cleaned = cleanTrack(points).points;
     const latest = cleaned.at(-1);
     if (latest) this.onLocation(latest.coordinate);
     const matchPoints = this.lastPoint ? [this.lastPoint, ...points] : points;
     this.lastPoint = points.at(-1) ?? this.lastPoint;
-    const match = await new DefaultCoverageMatcher().match(matchPoints, this.session.mode, (point) =>
-      this.network.nearbySamples(point, this.session!.mode),
+    const match = await new DefaultCoverageMatcher().match(matchPoints, (point) =>
+      this.network.nearbySamples(point),
     );
-    await this.progress.saveVisitedSamples(this.regionVersion, this.session.mode, match.visitedSampleIds);
+    await this.progress.saveVisitedSamples(match.visitedSampleIds);
     if (match.matchedEdgeIds.length) await this.onCoverage(match.matchedEdgeIds);
-    const reward = new DefaultRewardEngine();
-    for (const landmarkId of reward.unlockedLandmarks(cleaned)) {
-      await this.rewards.unlockLandmark({ landmarkId, unlockedAt: Date.now(), sessionId: this.session.id });
+    for (const landmarkId of this.rewardEngine.unlockedLandmarks(cleaned)) {
+      await this.rewards.unlockLandmark({ cityId: this.cityId, landmarkId, unlockedAt: Date.now(), sessionId: this.session.id });
     }
     await this.emitProgress();
   }
 
   private async emitProgress() {
     if (!this.session) return;
-    const mode = this.session.mode;
-    const progress = await Promise.all([
-      this.progress.getCityProgress("ann-arbor", mode),
-      this.progress.getCityProgress("ypsilanti", mode),
-    ]);
+    const progress = [await this.progress.getCityProgress()];
     this.lastProgress = progress;
-    const reward = new DefaultRewardEngine();
-    for (const item of progress.filter((candidate) => reward.cityCompleted(candidate))) {
+    for (const item of progress.filter((candidate) => this.rewardEngine.cityCompleted(candidate))) {
       await this.rewards.unlockCityCompletion({
         cityId: item.cityId,
-        mode: item.mode,
         unlockedAt: Date.now(),
         sessionId: this.session.id,
       });

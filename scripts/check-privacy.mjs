@@ -1,12 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const runtimeFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], {
   encoding: "utf8",
 })
   .trim()
   .split("\n")
-  .filter((file) => /^(?:src\/.*\.[jt]sx?|App\.tsx|index\.ts|app\.config\.ts)$/.test(file));
+  .filter((file) => existsSync(file) && /^(?:src\/.*\.[jt]sx?|App\.tsx|index\.ts|app\.config\.ts)$/.test(file));
 
 const forbiddenApis = [
   ["fetch", /\bfetch\s*\(/],
@@ -16,10 +16,19 @@ const forbiddenApis = [
 ];
 const violations = runtimeFiles.flatMap((file) => {
   const source = readFileSync(file, "utf8");
-  return forbiddenApis
+  const fileViolations = forbiddenApis
     .filter(([, pattern]) => pattern.test(source))
     .map(([name]) => `${file}: runtime network API ${name}`);
+  if (source.includes("File.downloadFileAsync") && file !== "src/platform/region/FileCityMapRepository.ts") {
+    fileViolations.push(`${file}: city-map downloads must stay in the region adapter`);
+  }
+  return fileViolations;
 });
+
+const regionAdapter = readFileSync("src/platform/region/FileCityMapRepository.ts", "utf8");
+if (!regionAdapter.includes("https://yuanhaomeng.github.io/fill-my-map/maps/catalog.json")) {
+  violations.push("City-map catalog must use the approved static GitHub Pages URL");
+}
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 const dependencies = Object.keys({ ...packageJson.dependencies, ...packageJson.devDependencies });

@@ -8,17 +8,17 @@ const samples: ResolvedSample[] = [
 ];
 
 describe("partial coverage state", () => {
-  it("keeps walk and drive samples isolated and combines only the same sample", () => {
+  it("deduplicates visited samples", () => {
     const result = coverageSegments([
-      { sample_id: "1", edge_id: "a", mode: "walk" },
-      { sample_id: "1", edge_id: "a", mode: "drive" },
-      { sample_id: "2", edge_id: "b", mode: "drive" },
+      { sample_id: "1", edge_id: "a" },
+      { sample_id: "1", edge_id: "a" },
+      { sample_id: "2", edge_id: "b" },
     ], samples);
-    expect(result.map(({ id, state }) => [id, state])).toEqual([["1", "both"], ["2", "drive"]]);
+    expect(result.map(({ id }) => id)).toEqual(["1", "2"]);
   });
 
   it("returns a partial segment before an edge reaches its completion threshold", () => {
-    const result = coverageSegments([{ sample_id: "1", edge_id: "a", mode: "walk" }], samples);
-    expect(result).toMatchObject([{ id: "1", edgeId: "a", state: "walk" }]);
+    const result = coverageSegments([{ sample_id: "1", edge_id: "a" }], samples);
+    expect(result).toMatchObject([{ id: "1", edgeId: "a" }]);
   });
 });

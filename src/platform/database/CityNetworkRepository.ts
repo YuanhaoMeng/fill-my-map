@@ -1,9 +1,9 @@
-import { importDatabaseFromAssetAsync, openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
+import { File } from "expo-file-system";
+import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import type { CoverageCatalog, MatchCandidate, NetworkRepository, ResolvedSample } from "../../core/contracts";
 import { distanceM } from "../../core/geo";
-import type { Coordinate, CoverageEdge, TrackPoint, TravelMode } from "../../core/types";
+import type { Coordinate, CoverageEdge, TrackPoint } from "../../core/types";
 import type { MultiPolygon, Polygon } from "geojson";
-import { NETWORK_ASSET } from "../region/assets";
 
 interface SampleRow {
   id: number;
@@ -37,18 +37,17 @@ export interface MapCityBoundary {
   geometry: Polygon | MultiPolygon;
 }
 
-export class BundledNetworkRepository implements NetworkRepository, CoverageCatalog {
+export class CityNetworkRepository implements NetworkRepository, CoverageCatalog {
   private constructor(private readonly database: SQLiteDatabase) {}
 
-  static async open(regionVersion: string) {
-    const name = `network-${regionVersion}.sqlite`;
-    await importDatabaseFromAssetAsync(name, { assetId: NETWORK_ASSET });
-    const database = await openDatabaseAsync(name, { useNewConnection: true });
+  static async open(networkUri: string) {
+    const file = new File(networkUri);
+    const database = await openDatabaseAsync(file.name, { useNewConnection: true }, file.parentDirectory.uri);
     await database.execAsync("PRAGMA query_only=ON");
-    return new BundledNetworkRepository(database);
+    return new CityNetworkRepository(database);
   }
 
-  async nearbySamples(point: TrackPoint, mode: TravelMode): Promise<readonly MatchCandidate[]> {
+  async nearbySamples(point: TrackPoint): Promise<readonly MatchCandidate[]> {
     const radiusM = Math.min(30, Math.max(15, point.accuracyM));
     const latDelta = radiusM / 111_320;
     const lonDelta = latDelta / Math.cos((point.coordinate[1] * Math.PI) / 180);
@@ -56,7 +55,7 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
     const rows = await this.database.getAllAsync<SampleRow>(
       `SELECT s.id, s.edge_id, s.longitude, s.latitude, s.bearing
        FROM sample_index i JOIN samples s ON s.id=i.id JOIN edges e ON e.id=s.edge_id
-       WHERE i.min_lon<=? AND i.max_lon>=? AND i.min_lat<=? AND i.max_lat>=? AND e.${mode}=1`,
+       WHERE i.min_lon<=? AND i.max_lon>=? AND i.min_lat<=? AND i.max_lat>=? AND (e.walk=1 OR e.drive=1)`,
       lon + lonDelta,
       lon - lonDelta,
       lat + latDelta,
@@ -80,9 +79,6 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
       cityId: row.city_id,
       name: row.name,
       coordinates: JSON.parse(row.geometry_json),
-      modes: ([row.walk ? "walk" : null, row.drive ? "drive" : null] as const).filter(
-        (mode): mode is TravelMode => mode !== null,
-      ),
       sampleCount: row.sample_count,
     }));
   }
@@ -133,9 +129,9 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
     }));
   }
 
-  async countEligibleEdges(cityId: string, mode: TravelMode) {
+  async countEligibleEdges(cityId: string) {
     const row = await this.database.getFirstAsync<{ count: number }>(
-      `SELECT count(*) count FROM edges WHERE city_id=? AND ${mode}=1`,
+      "SELECT count(*) count FROM edges WHERE city_id=? AND (walk=1 OR drive=1)",
       cityId,
     );
     return row?.count ?? 0;
@@ -146,9 +142,9 @@ export class BundledNetworkRepository implements NetworkRepository, CoverageCata
     return row?.city_id ?? null;
   }
 
-  async edgeEligible(edgeId: string, mode: TravelMode) {
+  async edgeEligible(edgeId: string) {
     const row = await this.database.getFirstAsync<{ eligible: number }>(
-      `SELECT ${mode} eligible FROM edges WHERE id=?`,
+      "SELECT (walk=1 OR drive=1) eligible FROM edges WHERE id=?",
       edgeId,
     );
     return row?.eligible === 1;
