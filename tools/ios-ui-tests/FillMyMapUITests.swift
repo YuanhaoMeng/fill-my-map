@@ -124,6 +124,15 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
   }
 
+  func testRejectsTruncatedCityMap() {
+    openCityMaps()
+    selectImportFile("truncated-ypsilanti.fillmap")
+    XCTAssertTrue(app.buttons["Import .fillmap"].waitForExistence(timeout: 15))
+    XCTAssertTrue(app.staticTexts["Active"].exists)
+    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
+    XCTAssertEqual(app.buttons.matching(identifier: "×").count, 2)
+  }
+
   private func selectImportFile(_ name: String) {
     app.buttons["Import .fillmap"].tap()
     let file = app.descendants(matching: .any)

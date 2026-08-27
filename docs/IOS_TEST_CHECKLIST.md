@@ -27,7 +27,7 @@
 - [x] Foreground/background denial is recoverable in the simulator UI suite.
 - [ ] Location Services off is recoverable.
 - [x] Force-quit marks an active session interrupted on next launch.
-- [ ] Corrupt and truncated packages are rejected without replacing an installed map.
+- [x] Corrupt and truncated packages are rejected without replacing an installed map.
 - [ ] Low-storage download/export failure preserves maps, tracks, and progress.
 - [x] Deleting a city map preserves progress after reinstall.
 - [ ] Recording makes no network request; downloaded maps work in airplane mode.
