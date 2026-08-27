@@ -54,12 +54,19 @@ run_test testCatalogAndDownloadAnnArbor
 test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/basemap.pmtiles"
 test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
 run_test testRelaunchesInstalledMap
+xcrun simctl privacy "$SIMULATOR_UDID" revoke location "$APP_BUNDLE"
+run_test testLocationPermissionDenied
 xcrun simctl privacy "$SIMULATOR_UDID" grant location-always "$APP_BUNDLE"
 xcrun simctl location "$SIMULATOR_UDID" set 42.2760895,-83.7376592
 run_test testFollowPartialCoverageAndSharePreview
 assert_sql "SELECT count(*) FROM sessions WHERE status='completed'" "1" "completed session"
 assert_sql "SELECT count(*) FROM edge_progress WHERE visited_count>0 AND completed=0" "1" "partial coverage"
 assert_sql "SELECT count(*) FROM pragma_table_info('visited_samples') WHERE name='mode'" "0" "single exploration mode"
+run_test testStartSessionForInterruption
+xcrun simctl terminate "$SIMULATOR_UDID" "$APP_BUNDLE" >/dev/null 2>&1 || true
+run_test testRelaunchesInstalledMap
+assert_sql "SELECT count(*) FROM sessions WHERE status='interrupted'" "1" "interrupted session recovery"
+run_test testGpxExportUsesSystemShare
 run_test testDownloadSwitchAndDeleteYpsilanti
 test ! -e "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2"
 assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress retained"

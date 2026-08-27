@@ -20,13 +20,13 @@
 - [x] Finish fits the active city and opens a screenshot preview.
 - [x] Shared preview shows explored area, city, percent, and OSM attribution.
 - [x] Shared preview omits raw route, endpoints, user marker, and precise time.
-- [ ] GPX export remains an explicit user action through the system share sheet.
+- [x] GPX export remains an explicit user action through the system share sheet.
 
 ## Recovery and privacy
 
-- [ ] Foreground/background denial is recoverable.
+- [x] Foreground/background denial is recoverable in the simulator UI suite.
 - [ ] Location Services off is recoverable.
-- [ ] Force-quit marks an active session interrupted on next launch.
+- [x] Force-quit marks an active session interrupted on next launch.
 - [ ] Corrupt and truncated packages are rejected without replacing an installed map.
 - [ ] Low-storage download/export failure preserves maps, tracks, and progress.
 - [ ] Deleting a city map preserves progress after reinstall.

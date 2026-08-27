@@ -15,7 +15,9 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["Ypsilanti"].exists)
     XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 2)
     app.buttons.matching(identifier: "Download").firstMatch.tap()
-    assertActiveMap(city: "Ann Arbor", timeout: 120)
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 120))
+    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
+    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
   }
 
   func testRelaunchesInstalledMap() {
@@ -23,6 +25,14 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
     XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
     XCTAssertTrue(app.staticTexts["© OpenStreetMap contributors"].exists)
+  }
+
+  func testLocationPermissionDenied() {
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    app.buttons["Start exploring"].tap()
+    let error = "Background location permission is required for an active exploration."
+    XCTAssertTrue(app.staticTexts[error].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["Start exploring"].exists)
   }
 
   func testFollowPartialCoverageAndSharePreview() {
@@ -73,12 +83,34 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 20))
   }
 
+  func testStartSessionForInterruption() {
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    app.buttons["Start exploring"].tap()
+    XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 15))
+    sleep(2)
+  }
+
+  func testGpxExportUsesSystemShare() {
+    openMenuItem("Manage local data")
+    let export = app.buttons["Export GPX"].firstMatch
+    XCTAssertTrue(export.waitForExistence(timeout: 10))
+    export.tap()
+    sleep(2)
+    XCTAssertTrue(export.exists)
+    XCTAssertFalse(export.isHittable)
+    app.terminate()
+  }
+
   private func openCityMaps() {
+    openMenuItem("City maps")
+    XCTAssertTrue(app.staticTexts["Choose a city map to explore."].waitForExistence(timeout: 10))
+  }
+
+  private func openMenuItem(_ label: String) {
     XCTAssertTrue(app.buttons["Menu"].waitForExistence(timeout: 30))
     app.buttons["Menu"].tap()
-    XCTAssertTrue(app.buttons["City maps"].waitForExistence(timeout: 5))
-    app.buttons["City maps"].tap()
-    XCTAssertTrue(app.staticTexts["Choose a city map to explore."].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5))
+    app.buttons[label].tap()
   }
 
   private func assertActiveMap(city: String, timeout: TimeInterval) {
