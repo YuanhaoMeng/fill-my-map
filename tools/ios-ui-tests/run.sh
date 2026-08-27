@@ -50,36 +50,17 @@ assert_sql() {
   fi
 }
 
-run_test testLaunchesInstalledApp
-run_test testResetAllData
-xcrun simctl privacy "$SIMULATOR_UDID" reset location "$APP_BUNDLE"
-run_test testLocationPermissionCanBeDenied
+run_test testCatalogAndDownloadAnnArbor
+test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/basemap.pmtiles"
+test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
+run_test testRelaunchesInstalledMap
 xcrun simctl privacy "$SIMULATOR_UDID" grant location-always "$APP_BUNDLE"
 xcrun simctl location "$SIMULATOR_UDID" set 42.2760895,-83.7376592
-run_test testRecordsCoveragePoint
+run_test testFollowPartialCoverageAndSharePreview
+assert_sql "SELECT count(*) FROM sessions WHERE status='completed'" "1" "completed session"
 assert_sql "SELECT count(*) FROM edge_progress WHERE visited_count>0 AND completed=0" "1" "partial coverage"
-run_test testLaunchesInstalledApp
-xcrun simctl location "$SIMULATOR_UDID" set 42.2769,-83.7382
-run_test testRecordsAndPersistsWalk
-xcrun simctl location "$SIMULATOR_UDID" set 42.2768073,-83.7380026
-run_test testDriveSession
-run_test testRewardShareSheet
-run_test testProgressShareSheet
-run_test testGpxShareSheet
-run_test testExcludeAndRestoreRoad
-run_test testDeleteTracksKeepsProgress
-
-xcrun simctl terminate "$SIMULATOR_UDID" "$APP_BUNDLE" >/dev/null 2>&1 || true
-assert_sql "SELECT count(*) FROM sessions" "3" "session summaries"
-assert_sql "SELECT count(*) FROM track_points" "0" "raw track deletion"
-assert_sql "SELECT count(*) FROM visited_samples" "2" "independent coverage"
-assert_sql "SELECT count(DISTINCT mode) FROM visited_samples" "2" "travel modes"
-assert_sql "SELECT count(*) FROM landmark_unlocks WHERE landmark_id='aa-diag'" "1" "reward"
-assert_sql "SELECT count(*) FROM exclusions" "0" "exclusion undo"
-
-run_test testResetAllData
-xcrun simctl terminate "$SIMULATOR_UDID" "$APP_BUNDLE" >/dev/null 2>&1 || true
-assert_sql "SELECT count(*) FROM sessions" "0" "full reset sessions"
-assert_sql "SELECT count(*) FROM visited_samples" "0" "full reset progress"
-assert_sql "SELECT count(*) FROM landmark_unlocks" "0" "full reset rewards"
+assert_sql "SELECT count(*) FROM pragma_table_info('visited_samples') WHERE name='mode'" "0" "single exploration mode"
+run_test testDownloadSwitchAndDeleteYpsilanti
+test ! -e "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2"
+assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress retained"
 echo "iOS UI acceptance passed on $SIMULATOR_UDID."

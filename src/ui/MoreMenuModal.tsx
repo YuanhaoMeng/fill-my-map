@@ -26,7 +26,8 @@ export function MoreMenuModal({
   const { t } = useMessages();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity accessibilityRole="button" activeOpacity={1} style={styles.backdrop} onPress={onClose}>
+      <View style={styles.backdrop}>
+        <TouchableOpacity accessibilityLabel={t("close")} accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <Text style={styles.title}>{t("menu")}</Text>
           <Item label={t("maps")} disabled={sessionActive} onPress={onMaps} />
@@ -36,7 +37,7 @@ export function MoreMenuModal({
           <Item label={t("aboutLicenses")} onPress={onAbout} />
           <Item label={t("close")} onPress={onClose} />
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }

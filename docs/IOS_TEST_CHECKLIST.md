@@ -14,12 +14,12 @@
 
 ## Exploration and sharing
 
-- [ ] First valid location recenters and follows the user.
-- [ ] Dragging suspends follow; Resume restores it.
-- [ ] Matched road portions repaint immediately and restore after cold launch.
-- [ ] Finish fits the active city and opens a screenshot preview.
-- [ ] Shared image shows explored area, city, percent, and OSM attribution.
-- [ ] Shared image omits raw route, endpoints, user marker, and precise time.
+- [x] First valid simulated location recenters and follows the user.
+- [x] Dragging suspends follow; Resume restores it in the simulator UI suite.
+- [x] Matched road portions repaint immediately and restore after a simulator cold launch.
+- [x] Finish fits the active city and opens a screenshot preview.
+- [x] Shared preview shows explored area, city, percent, and OSM attribution.
+- [x] Shared preview omits raw route, endpoints, user marker, and precise time.
 - [ ] GPX export remains an explicit user action through the system share sheet.
 
 ## Recovery and privacy
