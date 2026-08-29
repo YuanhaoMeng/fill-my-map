@@ -8,6 +8,7 @@ CREATE TABLE edges(id TEXT PRIMARY KEY, city_id TEXT NOT NULL, osm_id TEXT NOT N
 CREATE TABLE samples(id INTEGER PRIMARY KEY, edge_id TEXT NOT NULL, longitude REAL NOT NULL, latitude REAL NOT NULL, bearing REAL NOT NULL);
 CREATE VIRTUAL TABLE sample_index USING rtree(id, min_lon, max_lon, min_lat, max_lat);
 CREATE TABLE landmarks(id TEXT PRIMARY KEY, city_id TEXT NOT NULL, name TEXT NOT NULL, longitude REAL NOT NULL, latitude REAL NOT NULL, radius_m REAL NOT NULL, osm_ref TEXT NOT NULL) WITHOUT ROWID;
+CREATE TABLE places(id TEXT PRIMARY KEY, name TEXT NOT NULL, longitude REAL NOT NULL, latitude REAL NOT NULL, osm_ref TEXT NOT NULL, detail_pack_id TEXT) WITHOUT ROWID;
 CREATE INDEX edges_city ON edges(city_id);
 CREATE INDEX samples_edge ON samples(edge_id);
 `;

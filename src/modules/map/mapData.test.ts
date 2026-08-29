@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cityBoundaryFeatures, landmarkFeatures, partialCoverageFeatures } from "./mapData";
+import { cityBoundaryFeatures, landmarkFeatures, partialCoverageFeatures, placeFeatures } from "./mapData";
 
 describe("offline map overlays", () => {
   it("renders the two configured city boundaries from bundled geometry", () => {
@@ -32,5 +32,13 @@ describe("offline map overlays", () => {
     ]);
     expect(features.features.map((feature) => feature.properties?.state)).toEqual(["explored"]);
     expect(features.features[0]?.geometry.coordinates[0]).toHaveLength(2);
+  });
+
+  it("marks only implemented parks with a downloadable detail pack", () => {
+    const features = placeFeatures([
+      { id: "pinckney", name: "Pinckney", coordinate: [-83.97, 42.42], osmRef: "relation/1", detailPackId: "pinckney-pack" },
+      { id: "other", name: "Other park", coordinate: [-83.8, 42.3], osmRef: "way/2", detailPackId: null },
+    ]);
+    expect(features.features.map((feature) => feature.properties?.detailPackId)).toEqual(["pinckney-pack", undefined]);
   });
 });

@@ -49,6 +49,7 @@ export interface CoverageSegment {
 
 export interface CityProgress {
   cityId: string;
+  regionVersion?: string;
   completedEdges: number;
   eligibleEdges: number;
   excludedEdges: number;

@@ -6,6 +6,7 @@ import { trackFeature } from "../map/mapData";
 import { withoutRawTrack } from "../share/shareSnapshot";
 import type { CityCatalogEntry, InstalledCity } from "../regions/cityPackTypes";
 import { initializeRuntime } from "./initializeRuntime";
+import { loadInstalledProgress } from "./loadInstalledProgress";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 export type { MapContent } from "./runtimeTypes";
 
@@ -76,6 +77,13 @@ export function useAppRuntime() {
     await maps.current.delete(city);
     reload();
   };
+  const openPlace = async (detailPackId: string) => {
+    if (state.session) return;
+    const local = state.maps.installed.find((item) => item.manifest.id === detailPackId);
+    if (local) return activateMap(local);
+    const entry = state.maps.catalog.find((item) => item.id === detailPackId);
+    if (entry) await downloadMap(entry);
+  };
   const exclude = async (edgeId: string, reason: ExclusionReason) => {
     await resources.current.progress?.exclude({ edgeId, reason, createdAt: Date.now() });
     await resources.current.refresh?.([edgeId]);
@@ -113,6 +121,7 @@ export function useAppRuntime() {
     importMap,
     activateMap,
     deleteMap,
+    openPlace,
     exclude,
     undoExclusion,
     listSessions,
@@ -142,7 +151,9 @@ async function boot(
     session: null,
     maps: { catalog: catalog.cities, installed, active },
   }));
-  if (active) await initializeRuntime(setState, resources, active);
+  const storedProgress = await loadInstalledProgress(installed);
+  setState((current) => ({ ...current, progress: storedProgress }));
+  if (active) await initializeRuntime(setState, resources, active, storedProgress);
 }
 
 async function runAction(

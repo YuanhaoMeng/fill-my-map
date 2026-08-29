@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import type { MapContent } from "../modules/app/useAppRuntime";
 import { theme } from "./theme";
 
-export function OfflineMapLayers({ map }: { map: MapContent }) {
+export function OfflineMapLayers({ map, onPlacePress }: { map: MapContent; onPlacePress: (id: string | null, name: string) => void }) {
   return (
     <>
       <GeoJSONSource id="city-boundaries" data={map.boundaries}>
@@ -57,6 +57,26 @@ export function OfflineMapLayers({ map }: { map: MapContent }) {
       >
         <Layer id="landmark-halo" type="circle" paint={{ "circle-color": theme.colors.both, "circle-opacity": 0.2, "circle-radius": 9 }} />
         <Layer id="landmark-dot" type="circle" paint={{ "circle-color": theme.colors.both, "circle-radius": 4, "circle-stroke-width": 1 }} />
+      </GeoJSONSource>
+      <GeoJSONSource
+        id="places"
+        data={map.places}
+        cluster
+        clusterMaxZoom={11}
+        clusterRadius={35}
+        onPress={(event) => {
+          const properties = event.nativeEvent.features[0]?.properties;
+          if (properties?.name) onPlacePress(properties.detailPackId ? String(properties.detailPackId) : null, String(properties.name));
+        }}
+      >
+        <Layer id="park-clusters" type="circle" filter={["has", "point_count"]} paint={{ "circle-color": theme.colors.muted, "circle-opacity": 0.35, "circle-radius": 7 }} />
+        <Layer id="park-halo" type="circle" filter={["!", ["has", "point_count"]]} paint={{ "circle-color": theme.colors.explored, "circle-opacity": 0.18, "circle-radius": 7 }} />
+        <Layer
+          id="park-dot"
+          type="circle"
+          filter={["!", ["has", "point_count"]]}
+          paint={{ "circle-color": ["case", ["has", "detailPackId"], theme.colors.explored, theme.colors.muted], "circle-radius": 3.5 }}
+        />
       </GeoJSONSource>
       {map.history ? (
         <GeoJSONSource id="history" data={map.history}>

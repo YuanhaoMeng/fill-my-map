@@ -19,6 +19,7 @@ export interface MapContent {
   edges: FeatureCollection<LineString>;
   partialCoverage: FeatureCollection<MultiLineString>;
   landmarks: FeatureCollection<Point>;
+  places: FeatureCollection<Point>;
   history?: FeatureCollection<LineString>;
 }
 

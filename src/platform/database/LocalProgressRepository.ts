@@ -118,7 +118,7 @@ export class LocalProgressRepository implements ProgressRepository, CoverageStat
       this.regionVersion,
     );
     const eligibleEdges = Math.max(0, total - excluded);
-    return { cityId: this.cityId, completedEdges: completed, eligibleEdges, excludedEdges: excluded, percent: progressPercent(completed, eligibleEdges) };
+    return { cityId: this.cityId, regionVersion: this.regionVersion, completedEdges: completed, eligibleEdges, excludedEdges: excluded, percent: progressPercent(completed, eligibleEdges) };
   }
 
   private async scalar(sql: string, ...params: (string | number)[]) {

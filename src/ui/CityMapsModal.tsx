@@ -1,7 +1,9 @@
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CityCatalogEntry, InstalledCity } from "../modules/regions/cityPackTypes";
+import type { CityProgress } from "../core/types";
 import { useMessages } from "../i18n/useMessages";
 import { theme } from "./theme";
+import { catalogRows } from "../modules/regions/catalogRows";
 
 export function CityMapsModal({
   visible,
@@ -9,6 +11,7 @@ export function CityMapsModal({
   catalog,
   installed,
   active,
+  progress,
   downloadProgress,
   error,
   onClose,
@@ -22,6 +25,7 @@ export function CityMapsModal({
   catalog: readonly CityCatalogEntry[];
   installed: readonly InstalledCity[];
   active: InstalledCity | null;
+  progress: readonly CityProgress[];
   downloadProgress?: number;
   error: string | null;
   onClose: () => void;
@@ -32,6 +36,7 @@ export function CityMapsModal({
 }) {
   const { t } = useMessages();
   const busy = downloadProgress !== undefined && downloadProgress < 1;
+  const rows = catalogRows(catalog, installed);
   return (
     <Modal visible={visible} animationType="slide">
       <View style={styles.screen}>
@@ -41,14 +46,21 @@ export function CityMapsModal({
         </View>
         <Text style={styles.subtitle}>{t("chooseCity")}</Text>
         <ScrollView contentContainerStyle={styles.list}>
-          {catalog.map((entry) => {
+          {rows.map((entry) => {
             const local = installed.find((city) => city.manifest.id === entry.id && city.manifest.version === entry.version);
             const selected = local && active?.manifest.id === local.manifest.id && active.manifest.version === local.manifest.version;
             return (
               <View key={`${entry.id}-${entry.version}`} style={styles.row}>
                 <View style={styles.details}>
                   <Text style={styles.name}>{entry.displayName}</Text>
-                  <Text style={styles.meta}>{formatBytes(entry.sizeBytes)}</Text>
+                  <Text style={styles.meta}>
+                    {entry.sizeBytes === 0 ? t("installedMap") : `${t(entry.kind === "place" ? "parkMap" : "regionMap")} · ${formatBytes(entry.sizeBytes)}`}
+                  </Text>
+                  {progress.find((item) => item.cityId === entry.id && item.regionVersion === entry.version) ? (
+                    <Text style={styles.progress}>
+                      {progress.find((item) => item.cityId === entry.id && item.regionVersion === entry.version)!.percent.toFixed(2)}% {t("explored")}
+                    </Text>
+                  ) : null}
                 </View>
                 {selected ? <Text style={styles.active}>{t("active")}</Text> : local
                   ? <Button label={t("open")} onPress={() => void onActivate(local)} />
@@ -65,7 +77,7 @@ export function CityMapsModal({
               </View>
             );
           })}
-          {catalog.length === 0 ? <Text style={styles.meta}>{t("unavailable")}</Text> : null}
+          {rows.length === 0 ? <Text style={styles.meta}>{t("unavailable")}</Text> : null}
         </ScrollView>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button label={t("importMap")} onPress={() => void onImport()} />
@@ -112,6 +124,7 @@ const styles = StyleSheet.create({
   name: { color: theme.colors.text, fontSize: 17, fontWeight: "700" },
   meta: { color: theme.colors.muted, marginTop: 4 },
   active: { color: theme.colors.both, fontWeight: "700" },
+  progress: { color: theme.colors.both, fontSize: 12, marginTop: 3 },
   button: { borderColor: theme.colors.both, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 9 },
   buttonText: { color: theme.colors.both, fontWeight: "700" },
   delete: { color: theme.colors.muted, fontSize: 24, marginLeft: 12 },

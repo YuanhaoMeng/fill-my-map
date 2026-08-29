@@ -1,4 +1,4 @@
-# iOS acceptance checklist — downloadable city maps
+# iOS acceptance checklist — region and park maps
 
 ## Automated and packaging
 
@@ -11,6 +11,14 @@
 - [x] Release `.app` contains no `.pmtiles`, `network.sqlite`, or `.fillmap`.
 - [x] Fresh simulator launch shows city selection with no map installed.
 - [x] Simulator downloads, activates, switches, deletes, and reimports both packages.
+- [x] Local v2 package verification passes for the Ypsilanti 50-mile overview,
+  Pinckney, and County Farm.
+- [x] Overview inventory contains 7,726 park points and exactly two implemented links.
+- [x] Pinckney verifies OSM geometry, DNR provenance, and official route-name matching.
+- [x] Inactive installed-map progress remains visible after switching and catalog migration.
+- [ ] Simulator downloads the v2 overview and both park packages from the published catalog.
+- [ ] Simulator taps both implemented park markers, opens details, and returns to overview.
+- [ ] Simulator confirms an unimplemented park remains informational.
 
 ## Exploration and sharing
 
@@ -33,6 +41,11 @@
 - [ ] Recording makes no network request; downloaded maps work in airplane mode.
 
 ## Real iPhone / field work (must not be simulated)
+
+- [ ] Real iPhone downloads and cold-restores the 50-mile overview.
+- [ ] Real iPhone renders the full park inventory without unacceptable interaction lag.
+- [ ] Real iPhone opens Pinckney and County Farm from overview park points.
+- [ ] Field-check at least one formally named Pinckney route and one County Farm trail.
 
 - [x] Personal Team Release build launches on the connected iPhone.
 - [x] Wi-Fi reinstall and cold launch succeed.

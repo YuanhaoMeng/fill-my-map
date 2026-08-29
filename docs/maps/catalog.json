@@ -1,21 +1,37 @@
 {
-  "formatVersion": 1,
-  "cities": [
+  "formatVersion": 2,
+  "packages": [
     {
-      "id": "ann-arbor",
-      "displayName": "Ann Arbor",
-      "version": "2026.08.24-v2",
-      "sizeBytes": 9795743,
-      "sha256": "7b0f30370cb9ce5c4c45b99b0b0ba346627f7327a0cbf4fb77102b0e0c30954c",
-      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.24-v2/ann-arbor-2026.08.24-v2.fillmap"
+      "id": "ypsilanti-50mi",
+      "displayName": "Ypsilanti · 50 mi",
+      "version": "2026.08.29-v3",
+      "kind": "overview",
+      "networkProfile": "arterial",
+      "sizeBytes": 117692209,
+      "sha256": "8bd2c7444376c292e50745abad1522a9bd9a68e7d3df166f96793d74a23e5acf",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/ypsilanti-50mi-2026.08.29-v3.fillmap"
     },
     {
-      "id": "ypsilanti",
-      "displayName": "Ypsilanti",
-      "version": "2026.08.24-v2",
-      "sizeBytes": 2673426,
-      "sha256": "076c175f395d38703ab05d475eced819fa8217e2b0c6585bec9bd6297bc8fe75",
-      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.24-v2/ypsilanti-2026.08.24-v2.fillmap"
+      "id": "pinckney-state-recreation-area",
+      "displayName": "Pinckney State Recreation Area",
+      "version": "2026.08.29-v3",
+      "kind": "place",
+      "parentId": "ypsilanti-50mi",
+      "networkProfile": "trail",
+      "sizeBytes": 3023906,
+      "sha256": "eec0f2e5df2d7c3dcccf8e065282c85f4622ab54fb6ac62a87dc9ffddbdf6e6a",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/pinckney-state-recreation-area-2026.08.29-v3.fillmap"
+    },
+    {
+      "id": "county-farm-park",
+      "displayName": "County Farm Park",
+      "version": "2026.08.29-v3",
+      "kind": "place",
+      "parentId": "ypsilanti-50mi",
+      "networkProfile": "trail",
+      "sizeBytes": 1432982,
+      "sha256": "5b355920114d5631b6adb72075b438c2781470d0564a34c74308d39e6727ad8c",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/county-farm-park-2026.08.29-v3.fillmap"
     }
   ]
 }

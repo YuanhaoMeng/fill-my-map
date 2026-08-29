@@ -11,5 +11,12 @@
 # Reproducible map-pack inputs and intermediates
 tools/map-pack/cache/
 tools/map-pack/work/
+tools/map-pack/work-v2/
+
+# v3 packages are generated locally and published as GitHub Release assets
+map-packs/cities/ypsilanti-50mi/
+map-packs/cities/pinckney-state-recreation-area/
+map-packs/cities/county-farm-park/
+map-packs/releases/*-2026.08.29-v3.fillmap
 
 *.log

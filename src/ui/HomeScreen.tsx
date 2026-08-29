@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useMessages } from "../i18n/useMessages";
 import { useAppRuntime } from "../modules/app/useAppRuntime";
 import { OfflineMap } from "./OfflineMap";
@@ -25,6 +25,11 @@ export function HomeScreen() {
   const [captureRequest, setCaptureRequest] = useState(0);
   const [shareImage, setShareImage] = useState<string | null>(null);
   const disabled = runtime.status !== "ready";
+  const activeProgress = runtime.progress.find((progress) =>
+    progress.cityId === runtime.maps.active?.manifest.id &&
+    progress.regionVersion === runtime.maps.active?.manifest.version);
+  const parent = runtime.maps.installed.find((map) =>
+    map.manifest.id === runtime.maps.active?.manifest.parentId);
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.mapPlaceholder}>
@@ -39,17 +44,23 @@ export function HomeScreen() {
           }
           captureRequest={captureRequest}
           onCapture={setShareImage}
+          onPlacePress={(id, name) => promptPlace(id, name, t("parkUnavailable"), t("download"), t("cancel"), runtime.openPlace)}
         />
         <Text style={styles.logo}>{t("appName")}</Text>
       </View>
       <View style={styles.panel}>
         <Text style={styles.privacy}>{runtime.session ? t("recording") : t("privacy")}</Text>
-        {runtime.progress.map((progress) => (
-          <View key={progress.cityId} style={styles.progressRow}>
-            <Text style={styles.city}>{runtime.maps.active?.manifest.displayName ?? progress.cityId}</Text>
-            <Text style={styles.percent}>{progress.percent.toFixed(2)}% {t("explored")}</Text>
+        {parent && !runtime.session ? (
+          <TouchableOpacity accessibilityRole="button" onPress={() => void runtime.activateMap(parent)}>
+            <Text style={styles.back}>‹ {t("backToRegion")}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {activeProgress ? (
+          <View style={styles.progressRow}>
+            <Text style={styles.city}>{runtime.maps.active?.manifest.displayName ?? activeProgress.cityId}</Text>
+            <Text style={styles.percent}>{activeProgress.percent.toFixed(2)}% {t("explored")}</Text>
           </View>
-        ))}
+        ) : null}
         {runtime.actionError ? <Text style={styles.error}>{t("permissionDenied")}</Text> : null}
         <View style={styles.actions}>
           {runtime.session ? (
@@ -82,6 +93,7 @@ export function HomeScreen() {
         catalog={runtime.maps.catalog}
         installed={runtime.maps.installed}
         active={runtime.maps.active}
+        progress={runtime.progress}
         downloadProgress={runtime.maps.downloadProgress}
         error={runtime.actionError}
         onClose={() => setShowMaps(false)}
@@ -104,7 +116,7 @@ export function HomeScreen() {
       <ExplorationShareModal
         imageUri={shareImage}
         cityName={runtime.maps.active?.manifest.displayName ?? ""}
-        progress={runtime.progress[0]}
+        progress={activeProgress}
         onClose={() => setShareImage(null)}
       />
     </SafeAreaView>
@@ -119,12 +131,28 @@ function Action({ color, disabled, label, onPress }: { color: string; disabled?:
   );
 }
 
+function promptPlace(
+  id: string | null,
+  name: string,
+  unavailable: string,
+  open: string,
+  cancel: string,
+  onOpen: (id: string) => Promise<void>,
+) {
+  if (!id) return Alert.alert(name, unavailable);
+  Alert.alert(name, undefined, [
+    { text: cancel, style: "cancel" },
+    { text: open, onPress: () => void onOpen(id) },
+  ]);
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   mapPlaceholder: { flex: 1 },
   logo: { color: theme.colors.text, fontSize: 22, fontWeight: "800", left: 18, position: "absolute", top: 12 },
   panel: { backgroundColor: theme.colors.panel, borderRadius: theme.radius, margin: 12, padding: 16 },
   privacy: { color: theme.colors.text, marginBottom: 14 },
+  back: { color: theme.colors.both, fontSize: 12, marginBottom: 10 },
   progressRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   city: { color: theme.colors.text, fontWeight: "600" },
   percent: { color: theme.colors.both, fontVariant: ["tabular-nums"] },

@@ -1,6 +1,6 @@
 import type { FeatureCollection, LineString, MultiLineString, MultiPolygon, Point, Polygon } from "geojson";
 import type { CoverageEdge, CoverageSegment, CoverageVisualState, TrackPoint } from "../../core/types";
-import type { MapCityBoundary, MapLandmark } from "../../platform/database/CityNetworkRepository";
+import type { MapCityBoundary, MapLandmark, MapPlace } from "../../platform/database/CityNetworkRepository";
 
 export function cityBoundaryFeatures(items: readonly MapCityBoundary[]): FeatureCollection<Polygon | MultiPolygon> {
   return {
@@ -60,6 +60,22 @@ export function landmarkFeatures(items: readonly MapLandmark[]): FeatureCollecti
       type: "Feature",
       id: item.id,
       properties: { id: item.id, name: item.name, cityId: item.cityId },
+      geometry: { type: "Point", coordinates: [...item.coordinate] },
+    })),
+  };
+}
+
+export function placeFeatures(items: readonly MapPlace[]): FeatureCollection<Point> {
+  return {
+    type: "FeatureCollection",
+    features: items.map((item) => ({
+      type: "Feature", id: item.id,
+      properties: {
+        id: item.id,
+        name: item.name,
+        osmRef: item.osmRef,
+        ...(item.detailPackId ? { detailPackId: item.detailPackId } : {}),
+      },
       geometry: { type: "Point", coordinates: [...item.coordinate] },
     })),
   };

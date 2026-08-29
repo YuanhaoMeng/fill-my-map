@@ -37,6 +37,14 @@ export interface MapCityBoundary {
   geometry: Polygon | MultiPolygon;
 }
 
+export interface MapPlace {
+  id: string;
+  name: string;
+  coordinate: Coordinate;
+  osmRef: string;
+  detailPackId: string | null;
+}
+
 export class CityNetworkRepository implements NetworkRepository, CoverageCatalog {
   private constructor(private readonly database: SQLiteDatabase) {}
 
@@ -91,6 +99,19 @@ export class CityNetworkRepository implements NetworkRepository, CoverageCatalog
       name: String(row.name),
       coordinate: [Number(row.longitude), Number(row.latitude)],
       radiusM: Number(row.radius_m),
+    }));
+  }
+
+  async listPlaces(): Promise<readonly MapPlace[]> {
+    const table = await this.database.getFirstAsync<{ found: number }>(
+      "SELECT count(*) found FROM sqlite_master WHERE type='table' AND name='places'",
+    );
+    if (!table?.found) return [];
+    const rows = await this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM places");
+    return rows.map((row) => ({
+      id: String(row.id), name: String(row.name),
+      coordinate: [Number(row.longitude), Number(row.latitude)],
+      osmRef: String(row.osm_ref), detailPackId: row.detail_pack_id ? String(row.detail_pack_id) : null,
     }));
   }
 

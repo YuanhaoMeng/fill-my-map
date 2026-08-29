@@ -38,4 +38,28 @@ describe("city map validation", () => {
     expect(() => parseCityCatalog({ formatVersion: 1, cities: [{ ...entry, downloadUrl: "https://maps.test/a" }] }))
       .toThrow("host");
   });
+
+  it("normalizes a v2 overview and place catalog", () => {
+    const entry = {
+      id: "southeast-michigan-50mi", displayName: "Southeast Michigan", version: "2026-v1",
+      sizeBytes: 123, sha256: hash, kind: "overview", networkProfile: "arterial",
+      downloadUrl: "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-v3/overview.fillmap",
+    };
+    const catalog = parseCityCatalog({ formatVersion: 2, packages: [entry] });
+    expect(catalog.cities[0]).toMatchObject({ kind: "overview", networkProfile: "arterial" });
+  });
+
+  it("accepts a dual-source trail manifest", () => {
+    const trail = {
+      ...manifest, formatVersion: 2, id: "pinckney-state-recreation-area", city: undefined,
+      kind: "place", parentId: "southeast-michigan-50mi", networkProfile: "trail",
+      area: { id: "pinckney-state-recreation-area", name: "Pinckney State Recreation Area", osmRef: "relation/5664016", center: [-83.973, 42.4156] },
+      source: undefined,
+      sources: [
+        { name: "OpenStreetMap", snapshot: "michigan.osm.pbf", url: "https://download.geofabrik.de", license: "ODbL-1.0" },
+        { name: "Michigan DNR", snapshot: "query.json", url: "https://gisagoegle.state.mi.us", license: "Public record" },
+      ],
+    };
+    expect(parseCityManifest(trail).networkProfile).toBe("trail");
+  });
 });

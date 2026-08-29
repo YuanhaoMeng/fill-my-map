@@ -6,10 +6,11 @@ import { LocalRewardRepository } from "../../platform/database/LocalRewardReposi
 import { LocalTrackHistoryRepository } from "../../platform/database/LocalTrackHistoryRepository";
 import { ExpoLocationRecorder } from "../../platform/location/ExpoLocationRecorder";
 import { ExplorationService } from "../exploration/ExplorationService";
-import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures, partialCoverageFeatures } from "../map/mapData";
+import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures, partialCoverageFeatures, placeFeatures } from "../map/mapData";
 import { offlineStyle } from "../map/offlineStyle";
 import { DefaultRewardEngine } from "../rewards/DefaultRewardEngine";
 import type { InstalledCity } from "../regions/cityPackTypes";
+import { mergePackProgress } from "./packProgress";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 
 type SetState = (state: RuntimeState | ((current: RuntimeState) => RuntimeState)) => void;
@@ -18,6 +19,7 @@ export async function initializeRuntime(
   setState: SetState,
   resources: { current: RuntimeResources },
   files: InstalledCity,
+  storedProgress: RuntimeState["progress"] = [],
 ) {
   const { id: cityId, version } = files.manifest;
   const network = await CityNetworkRepository.open(files.networkUri);
@@ -28,10 +30,11 @@ export async function initializeRuntime(
   const recorder = new ExpoLocationRecorder();
   if (await recorder.isRecording()) await recorder.stop();
   await progress.recoverInterruptedSessions();
-  const loadProgress = () => Promise.all([progress.getCityProgress()]);
-  const [edges, landmarks, boundaries, states, segments, initialProgress] = await Promise.all([
+  const loadProgress = async () => mergePackProgress(storedProgress, [await progress.getCityProgress()]);
+  const [edges, landmarks, places, boundaries, states, segments, initialProgress] = await Promise.all([
     network.listEdges(cityId),
     network.listLandmarks(),
+    network.listPlaces(),
     network.listCityBoundaries(),
     progress.getEdgeStates(),
     progress.getCoverageSegments(),
@@ -46,6 +49,7 @@ export async function initializeRuntime(
     edges: edgeFeatures(edges, visualStates),
     partialCoverage: partialCoverageFeatures([...visualSegments.values()]),
     landmarks: landmarkFeatures(landmarks),
+    places: placeFeatures(places),
   };
   const updateMap = (
     ids: readonly string[] | undefined,
@@ -100,7 +104,12 @@ export async function initializeRuntime(
     rewards,
     new DefaultRewardEngine(landmarks),
     ({ session, progress: changed }) => {
-      setState((current) => ({ ...current, session, userCoordinate: session ? current.userCoordinate : undefined, progress: changed }));
+      setState((current) => ({
+        ...current,
+        session,
+        userCoordinate: session ? current.userCoordinate : undefined,
+        progress: mergePackProgress(current.progress, changed),
+      }));
       void resources.current.refreshRewards?.();
     },
     async (ids) => resources.current.refresh?.(ids),

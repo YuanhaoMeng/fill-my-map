@@ -19,6 +19,7 @@ export function OfflineMap({
   onEdgeLongPress,
   captureRequest,
   onCapture,
+  onPlacePress,
 }: {
   status: "loading" | "needs-map" | "ready" | "error";
   map?: MapContent;
@@ -28,6 +29,7 @@ export function OfflineMap({
   onEdgeLongPress: (id: string, state: string) => void;
   captureRequest?: number;
   onCapture?: (uri: string) => void;
+  onPlacePress: (id: string | null, name: string) => void;
 }) {
   const captureViewRef = useRef<View>(null);
   const mapRef = useRef<MapRef>(null);
@@ -98,7 +100,7 @@ export function OfflineMap({
       }}
     >
       <Camera ref={cameraRef} initialViewState={{ bounds: [...map.bounds] }} />
-      <OfflineMapLayers map={map} />
+      <OfflineMapLayers map={map} onPlacePress={onPlacePress} />
       {showUserLocation ? <UserLocation /> : null}
       </Map>
       <Text style={styles.attribution}>{t("attribution")}</Text>
