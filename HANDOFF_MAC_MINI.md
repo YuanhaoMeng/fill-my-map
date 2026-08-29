@@ -7,6 +7,11 @@
 > Current implementation and acceptance truth live in `README.md`,
 > `docs/ARCHITECTURE.md`, `docs/MAP_PACK.md`, and
 > `docs/IOS_TEST_CHECKLIST.md`. The remaining text is migration history only.
+>
+> Update, 2026-08-29: a signed arm64 Release build now installs over Wi-Fi and
+> survives a terminate-and-cold-launch cycle on the connected iPhone Air. The
+> app contains its JS bundle and zero map packages. Real field, airplane-mode,
+> low-storage, Location Services-off, and battery acceptance remain.
 
 This handoff records the local state on 2026-08-25. v0.1 is implemented but
 not accepted: automated checks and simulator acceptance pass, while physical

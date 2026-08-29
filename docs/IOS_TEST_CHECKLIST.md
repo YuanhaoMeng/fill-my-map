@@ -34,8 +34,8 @@
 
 ## Real iPhone / field work (must not be simulated)
 
-- [ ] Personal Team Release build launches on the connected iPhone.
-- [ ] Wi-Fi reinstall and cold launch succeed.
+- [x] Personal Team Release build launches on the connected iPhone.
+- [x] Wi-Fi reinstall and cold launch succeed.
 - [ ] Ann Arbor: at least 15 minutes on foot, including 5 minutes locked.
 - [ ] Ann Arbor: at least 15 minutes by car, including 5 minutes locked.
 - [ ] Ypsilanti: at least 15 minutes on foot, including 5 minutes locked.
