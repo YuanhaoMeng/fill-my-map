@@ -36,6 +36,10 @@
 
 - [x] Personal Team Release build launches on the connected iPhone.
 - [x] Wi-Fi reinstall and cold launch succeed.
+- [x] Real iPhone downloads Ann Arbor and restores it after a cold launch.
+- [x] Real iPhone downloads, opens, switches, and deletes Ypsilanti.
+- [x] Real iPhone short-run UI tests cover follow recovery, privacy share preview,
+  GPX system sharing, and force-quit recovery.
 - [ ] Ann Arbor: at least 15 minutes on foot, including 5 minutes locked.
 - [ ] Ann Arbor: at least 15 minutes by car, including 5 minutes locked.
 - [ ] Ypsilanti: at least 15 minutes on foot, including 5 minutes locked.

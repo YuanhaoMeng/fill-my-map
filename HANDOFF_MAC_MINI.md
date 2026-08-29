@@ -12,6 +12,8 @@
 > survives a terminate-and-cold-launch cycle on the connected iPhone Air. The
 > app contains its JS bundle and zero map packages. Real field, airplane-mode,
 > low-storage, Location Services-off, and battery acceptance remain.
+> Signed real-device UI tests also pass city download/switch/delete, cold map
+> restoration, short exploration/share, GPX sharing, and force-quit recovery.
 
 This handoff records the local state on 2026-08-25. v0.1 is implemented but
 not accepted: automated checks and simulator acceptance pass, while physical
