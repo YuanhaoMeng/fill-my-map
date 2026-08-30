@@ -176,5 +176,4 @@ async function prepareMapSwitch(
 ) {
   setState((current) => ({ ...current, status: "loading", map: undefined }));
   await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-  await new Promise<void>((resolve) => setTimeout(resolve, 500));
 }

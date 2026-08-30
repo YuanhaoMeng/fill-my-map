@@ -12,8 +12,18 @@ export class FileCityMapRepository {
   private readonly root = new Directory(Paths.document, "city-maps");
   private readonly cities = new Directory(this.root, "cities");
   private readonly activeFile = new File(this.root, "active.json");
+  private catalogRequest?: Promise<CityCatalog>;
 
   async loadCatalog(): Promise<CityCatalog> {
+    if (this.catalogRequest) return this.catalogRequest;
+    this.catalogRequest = this.fetchCatalog().catch((error) => {
+      this.catalogRequest = undefined;
+      throw error;
+    });
+    return this.catalogRequest;
+  }
+
+  private async fetchCatalog(): Promise<CityCatalog> {
     const destination = new File(Paths.cache, "fill-my-map-catalog.json");
     const downloaded = await File.downloadFileAsync(CATALOG_URL, destination, { idempotent: true });
     return parseCityCatalog(await downloaded.json());
@@ -43,7 +53,7 @@ export class FileCityMapRepository {
     const directory = new Directory(this.cities, active.id, active.version);
     if (!directory.exists) return null;
     try {
-      return await this.readInstalled(directory, true);
+      return await this.readInstalled(directory);
     } catch {
       return null;
     }
@@ -79,7 +89,7 @@ export class FileCityMapRepository {
 
   async activate(city: InstalledCity) {
     this.ensureRoots();
-    await this.readInstalled(this.packageDirectory(city.manifest.id, city.manifest.version), true);
+    await this.readInstalled(this.packageDirectory(city.manifest.id, city.manifest.version));
     this.activeFile.create({ overwrite: true });
     this.activeFile.write(JSON.stringify({ id: city.manifest.id, version: city.manifest.version }));
   }
