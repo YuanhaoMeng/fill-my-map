@@ -13,11 +13,14 @@ index 22212748b1f1ca2eb73b5a1688ddb848b5c8ab0c..a9c2f392a1b99174d070c66616c838c2
  
      _pendingInitialLayout = YES;
 diff --git a/ios/components/sources/MLRNSource.m b/ios/components/sources/MLRNSource.m
-index f10165e..5cedd32 100644
+index f10165e..718938d 100644
 --- a/ios/components/sources/MLRNSource.m
 +++ b/ios/components/sources/MLRNSource.m
-@@ -105,0 +106 @@
+@@ -104,3 +104,4 @@
+   if (_source != nil) {
+     [_map.style removeSource:_source];
 +    _source = nil;
+   }
 diff --git a/ios/components/sources/geojson-source/MLRNGeoJSONSource.m b/ios/components/sources/geojson-source/MLRNGeoJSONSource.m
 index edc36da..f85a423 100644
 --- a/ios/components/sources/geojson-source/MLRNGeoJSONSource.m
