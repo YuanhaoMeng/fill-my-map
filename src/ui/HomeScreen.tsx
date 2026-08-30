@@ -34,6 +34,8 @@ export function HomeScreen() {
     <SafeAreaView style={styles.screen}>
       <View style={styles.mapPlaceholder}>
         <OfflineMap
+          key={`${runtime.maps.active?.manifest.id ?? "none"}:${runtime.maps.active?.manifest.version ?? "none"}`}
+          mapKey={`${runtime.maps.active?.manifest.id ?? "none"}-${runtime.maps.active?.manifest.version ?? "none"}`}
           status={runtime.status}
           map={runtime.map}
           showUserLocation={Boolean(runtime.session)}
@@ -44,14 +46,21 @@ export function HomeScreen() {
           }
           captureRequest={captureRequest}
           onCapture={setShareImage}
-          onPlacePress={(id, name) => promptPlace(id, name, t("parkUnavailable"), t("download"), t("cancel"), runtime.openPlace)}
+          onPlacePress={(id, name) => promptPlace(
+            id,
+            name,
+            t("parkUnavailable"),
+            runtime.maps.installed.some((map) => map.manifest.id === id) ? t("open") : t("download"),
+            t("cancel"),
+            runtime.openPlace,
+          )}
         />
         <Text style={styles.logo}>{t("appName")}</Text>
       </View>
       <View style={styles.panel}>
         <Text style={styles.privacy}>{runtime.session ? t("recording") : t("privacy")}</Text>
         {parent && !runtime.session ? (
-          <TouchableOpacity accessibilityRole="button" onPress={() => void runtime.activateMap(parent)}>
+          <TouchableOpacity accessibilityLabel={t("backToRegion")} accessibilityRole="button" onPress={() => void runtime.activateMap(parent)}>
             <Text style={styles.back}>‹ {t("backToRegion")}</Text>
           </TouchableOpacity>
         ) : null}

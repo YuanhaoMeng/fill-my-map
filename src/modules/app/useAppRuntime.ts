@@ -54,6 +54,7 @@ export function useAppRuntime() {
       const installed = await maps.current.download(entry, (downloadProgress) =>
         setState((current) => ({ ...current, maps: { ...current.maps, downloadProgress } })),
       );
+      await prepareMapSwitch(setState);
       await maps.current.activate(installed);
       reload();
     });
@@ -62,6 +63,7 @@ export function useAppRuntime() {
     await runAction(setState, async () => {
       const installed = await maps.current.importFromPicker();
       if (installed) {
+        await prepareMapSwitch(setState);
         await maps.current.activate(installed);
         reload();
       }
@@ -69,6 +71,7 @@ export function useAppRuntime() {
   };
   const activateMap = async (city: InstalledCity) => {
     if (state.session) return;
+    await prepareMapSwitch(setState);
     await maps.current.activate(city);
     reload();
   };
@@ -166,4 +169,12 @@ async function runAction(
   } catch (error) {
     setState((current) => ({ ...current, actionError: error instanceof Error ? error.message : "unknown" }));
   }
+}
+
+async function prepareMapSwitch(
+  setState: (state: RuntimeState | ((current: RuntimeState) => RuntimeState)) => void,
+) {
+  setState((current) => ({ ...current, status: "loading", map: undefined }));
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  await new Promise<void>((resolve) => setTimeout(resolve, 500));
 }

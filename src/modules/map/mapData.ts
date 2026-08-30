@@ -65,10 +65,13 @@ export function landmarkFeatures(items: readonly MapLandmark[]): FeatureCollecti
   };
 }
 
-export function placeFeatures(items: readonly MapPlace[]): FeatureCollection<Point> {
+export function placeFeatures(
+  items: readonly MapPlace[],
+  implemented = false,
+): FeatureCollection<Point> {
   return {
     type: "FeatureCollection",
-    features: items.map((item) => ({
+    features: items.filter((item) => Boolean(item.detailPackId) === implemented).map((item) => ({
       type: "Feature", id: item.id,
       properties: {
         id: item.id,

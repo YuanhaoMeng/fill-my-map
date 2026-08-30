@@ -13,6 +13,7 @@ import { shareCameraStop } from "./shareCamera";
 export function OfflineMap({
   status,
   map,
+  mapKey,
   showUserLocation,
   followSessionId,
   userCoordinate,
@@ -23,6 +24,7 @@ export function OfflineMap({
 }: {
   status: "loading" | "needs-map" | "ready" | "error";
   map?: MapContent;
+  mapKey: string;
   showUserLocation: boolean;
   followSessionId?: string;
   userCoordinate?: Coordinate;
@@ -92,7 +94,7 @@ export function OfflineMap({
       }}
       onLongPress={(event) => {
         void mapRef.current
-          ?.queryRenderedFeatures(event.nativeEvent.point, { layers: ["coverage-lines", "coverage-excluded"] })
+            ?.queryRenderedFeatures(event.nativeEvent.point, { layers: [`coverage-lines-${mapKey}`, `coverage-excluded-${mapKey}`] })
           .then((features) => {
             const properties = features[0]?.properties;
             if (properties?.id) onEdgeLongPress(String(properties.id), String(properties.state));
@@ -100,8 +102,8 @@ export function OfflineMap({
       }}
     >
       <Camera ref={cameraRef} initialViewState={{ bounds: [...map.bounds] }} />
-      <OfflineMapLayers map={map} onPlacePress={onPlacePress} />
-      {showUserLocation ? <UserLocation /> : null}
+      {mapReady ? <OfflineMapLayers map={map} mapKey={mapKey} onPlacePress={onPlacePress} /> : null}
+      {mapReady && showUserLocation ? <UserLocation /> : null}
       </Map>
       <Text style={styles.attribution}>{t("attribution")}</Text>
       {showUserLocation && follow === "suspended" ? (

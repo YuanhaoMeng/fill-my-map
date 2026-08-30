@@ -50,6 +50,7 @@ export async function initializeRuntime(
     partialCoverage: partialCoverageFeatures([...visualSegments.values()]),
     landmarks: landmarkFeatures(landmarks),
     places: placeFeatures(places),
+    detailPlaces: placeFeatures(places, true),
   };
   const updateMap = (
     ids: readonly string[] | undefined,

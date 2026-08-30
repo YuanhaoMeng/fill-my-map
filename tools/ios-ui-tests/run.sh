@@ -76,40 +76,46 @@ assert_sql() {
     exit 1
   fi
 }
+has_rows() {
+  local table="$1" condition="$2" label="$3"
+  assert_sql "SELECT CASE WHEN count(*)>0 THEN 1 ELSE 0 END FROM $table WHERE $condition" "1" "$label"
+}
 
-run_test testCatalogAndDownloadAnnArbor
-test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/basemap.pmtiles"
-test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
-run_test testRelaunchesInstalledMap
+run_test testCatalogAndDownloadOverview
+OVERVIEW="$DATA_DIR/Documents/city-maps/cities/ypsilanti-50mi/2026.08.29-v3"
+test -f "$OVERVIEW/basemap.pmtiles"
+test -f "$OVERVIEW/network.sqlite"
+run_test testRelaunchesOverview
 xcrun simctl privacy "$SIMULATOR_UDID" revoke location "$APP_BUNDLE"
 run_test testLocationPermissionDenied
 xcrun simctl privacy "$SIMULATOR_UDID" grant location-always "$APP_BUNDLE"
-xcrun simctl location "$SIMULATOR_UDID" set 42.2760895,-83.7376592
-run_test testFollowPartialCoverageAndSharePreview
+xcrun simctl location "$SIMULATOR_UDID" set 42.2537448,-83.6495246
+run_test testFollowCoverageAndShare
 assert_sql "SELECT count(*) FROM sessions WHERE status='completed'" "1" "completed session"
-assert_sql "SELECT count(*) FROM edge_progress WHERE visited_count>0 AND completed=0" "1" "partial coverage"
+has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "overview progress"
 assert_sql "SELECT count(*) FROM pragma_table_info('visited_samples') WHERE name='mode'" "0" "single exploration mode"
 run_test testStartSessionForInterruption
 xcrun simctl terminate "$SIMULATOR_UDID" "$APP_BUNDLE" >/dev/null 2>&1 || true
-run_test testRelaunchesInstalledMap
+run_test testRelaunchesOverview
 assert_sql "SELECT count(*) FROM sessions WHERE status='interrupted'" "1" "interrupted session recovery"
+run_test testDownloadParkPackagesAndReturn
+PINCKNEY="$DATA_DIR/Documents/city-maps/cities/pinckney-state-recreation-area/2026.08.29-v3"
+COUNTY_FARM="$DATA_DIR/Documents/city-maps/cities/county-farm-park/2026.08.29-v3"
+test -f "$PINCKNEY/network.sqlite"
+test -f "$COUNTY_FARM/network.sqlite"
+has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "progress retained across maps"
+run_test testOpenPinckneyFromOverviewMarker
+run_test testDeleteCountyFarmKeepsOverview
+test ! -e "$COUNTY_FARM"
+has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "progress retained after delete"
+seed_import_file "$REPO_DIR/map-packs/releases/county-farm-park-2026.08.29-v3.fillmap" "county-farm-park-2026.08.29-v3.fillmap"
+run_test testImportCountyFarmFromFiles
+test -f "$COUNTY_FARM/network.sqlite"
+clear_import_seed
+cp "$REPO_DIR/map-packs/releases/pinckney-state-recreation-area-2026.08.29-v3.fillmap" "$TEST_DIR/truncated-pinckney.fillmap"
+truncate -s 4096 "$TEST_DIR/truncated-pinckney.fillmap"
+seed_import_file "$TEST_DIR/truncated-pinckney.fillmap" "truncated-pinckney.fillmap"
+run_test testRejectsTruncatedParkMap
+test -f "$COUNTY_FARM/network.sqlite"
 run_test testGpxExportUsesSystemShare
-run_test testDownloadSwitchAndDeleteYpsilanti
-test ! -e "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2"
-assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress retained"
-seed_import_file "$REPO_DIR/map-packs/releases/ypsilanti-2026.08.24-v2.fillmap" "ypsilanti-2026.08.24-v2.fillmap"
-run_test testImportYpsilantiFromFiles
-test -f "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2/network.sqlite"
-clear_import_seed
-seed_import_file "$REPO_DIR/map-packs/releases/ann-arbor-2026.08.24-v2.fillmap" "ann-arbor-2026.08.24-v2.fillmap"
-run_test testDeleteAndImportAnnArbor
-test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
-assert_sql "SELECT count(*) FROM edge_progress WHERE city_id='ann-arbor'" "1" "Ann Arbor progress restored"
-clear_import_seed
-cp "$REPO_DIR/map-packs/releases/ypsilanti-2026.08.24-v2.fillmap" "$TEST_DIR/truncated-ypsilanti.fillmap"
-truncate -s 4096 "$TEST_DIR/truncated-ypsilanti.fillmap"
-seed_import_file "$TEST_DIR/truncated-ypsilanti.fillmap" "truncated-ypsilanti.fillmap"
-run_test testRejectsTruncatedCityMap
-test -f "$DATA_DIR/Documents/city-maps/cities/ann-arbor/2026.08.24-v2/network.sqlite"
-test -f "$DATA_DIR/Documents/city-maps/cities/ypsilanti/2026.08.24-v2/network.sqlite"
 echo "iOS UI acceptance passed on $SIMULATOR_UDID."

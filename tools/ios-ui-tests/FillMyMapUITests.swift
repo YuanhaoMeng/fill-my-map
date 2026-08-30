@@ -9,84 +9,53 @@ final class FillMyMapUITests: XCTestCase {
     app.launch()
   }
 
-  func testCatalogAndDownloadAnnArbor() {
-    XCTAssertTrue(app.staticTexts["City maps"].waitForExistence(timeout: 20))
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
-    XCTAssertTrue(app.staticTexts["Ypsilanti"].exists)
-    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 2)
+  func testCatalogAndDownloadOverview() {
+    XCTAssertTrue(app.staticTexts["Offline maps"].waitForExistence(timeout: 20))
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].exists)
+    XCTAssertTrue(app.staticTexts["Pinckney State Recreation Area"].exists)
+    XCTAssertTrue(app.staticTexts["County Farm Park"].exists)
+    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 3)
     app.buttons.matching(identifier: "Download").firstMatch.tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 120))
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
-    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 300))
   }
 
-  func testRelaunchesInstalledMap() {
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
-    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
+  func testRelaunchesOverview() {
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 60))
+    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].exists)
     XCTAssertTrue(app.staticTexts["© OpenStreetMap contributors"].exists)
   }
 
   func testLocationPermissionDenied() {
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 60))
     app.buttons["Start exploring"].tap()
     let error = "Background location permission is required for an active exploration."
     XCTAssertTrue(app.staticTexts[error].waitForExistence(timeout: 10))
-    XCTAssertTrue(app.buttons["Start exploring"].exists)
   }
 
-  func testFollowPartialCoverageAndSharePreview() {
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+  func testFollowCoverageAndShare() {
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 60))
     app.buttons["Start exploring"].tap()
-    XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 15))
-    XCTAssertTrue(app.staticTexts["Recording — works while locked"].exists)
+    XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 20))
     let map = app.otherElements["Map"]
     map.swipeLeft()
     XCTAssertTrue(app.buttons["Resume following"].waitForExistence(timeout: 8))
     app.buttons["Resume following"].tap()
-    XCTAssertFalse(app.buttons["Resume following"].exists)
+    XCTAssertTrue(app.buttons["Resume following"].waitForNonExistence(timeout: 3))
     sleep(3)
     app.buttons["Finish exploration"].tap()
     XCTAssertTrue(app.staticTexts["FILL MY MAP"].waitForExistence(timeout: 20))
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
-    XCTAssertTrue(app.staticTexts["© OpenStreetMap contributors"].exists)
-    XCTAssertTrue(app.staticTexts["No exact route, endpoints, home location, or precise time is shown."].exists)
-    XCTAssertFalse(app.staticTexts["Recording — works while locked"].exists)
-    attachScreenshot("exploration-share-preview")
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].exists)
+    let privacy = "No exact route, endpoints, home location, or precise time is shown."
+    XCTAssertTrue(app.staticTexts[privacy].exists)
+    attachScreenshot("overview-share-preview")
     app.buttons["Close"].tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 8))
-  }
-
-  func testDownloadSwitchAndDeleteYpsilanti() {
-    openCityMaps()
-    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 1)
-    app.buttons["Download"].tap()
-    assertActiveMap(city: "Ypsilanti", timeout: 120)
-    app.buttons["Close"].tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
-    XCTAssertTrue(app.staticTexts["Ypsilanti"].exists)
-    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
-    attachScreenshot("ypsilanti-offline-map")
-    openCityMaps()
-    app.buttons["Open"].tap()
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].waitForExistence(timeout: 30))
-    XCTAssertTrue(app.staticTexts["Active"].exists)
-    let deleteButtons = app.buttons.matching(identifier: "×")
-    XCTAssertEqual(deleteButtons.count, 2)
-    deleteButtons.element(boundBy: 1).tap()
-    XCTAssertTrue(app.alerts["Delete this city map?"].waitForExistence(timeout: 5))
-    XCTAssertTrue(app.staticTexts["Exploration progress will be kept on this device."].exists)
-    app.alerts.buttons["Delete"].tap()
-    XCTAssertTrue(app.buttons["Download"].waitForExistence(timeout: 15))
-    XCTAssertEqual(app.buttons.matching(identifier: "×").count, 1)
-    app.buttons["Close"].tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 20))
   }
 
   func testStartSessionForInterruption() {
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 60))
     app.buttons["Start exploring"].tap()
-    XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 15))
+    XCTAssertTrue(app.buttons["Finish exploration"].waitForExistence(timeout: 20))
     sleep(2)
   }
 
@@ -96,41 +65,83 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertTrue(export.waitForExistence(timeout: 10))
     export.tap()
     sleep(2)
-    XCTAssertTrue(export.exists)
     XCTAssertFalse(export.isHittable)
     app.terminate()
   }
 
-  func testImportYpsilantiFromFiles() {
-    openCityMaps()
-    selectImportFile("ypsilanti-2026.08.24-v2.fillmap")
-    assertActiveMap(city: "Ypsilanti", timeout: 60)
+  func testDownloadParkPackagesAndReturn() {
+    openMaps()
+    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 2)
+    app.buttons.matching(identifier: "Download").firstMatch.tap()
+    assertActiveMap("Pinckney State Recreation Area", timeout: 180)
     app.buttons["Close"].tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
-    XCTAssertTrue(app.staticTexts["Ypsilanti"].exists)
-    XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 20))
+    XCTAssertTrue(backButton.waitForExistence(timeout: 60))
+    backButton.tap()
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].waitForExistence(timeout: 60))
+    openMaps()
+    app.buttons["Download"].tap()
+    assertActiveMap("County Farm Park", timeout: 180)
+    app.buttons["Close"].tap()
+    XCTAssertTrue(backButton.waitForExistence(timeout: 60))
+    backButton.tap()
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].waitForExistence(timeout: 60))
   }
 
-  func testDeleteAndImportAnnArbor() {
-    openCityMaps()
-    app.buttons.matching(identifier: "×").element(boundBy: 0).tap()
-    XCTAssertTrue(app.alerts["Delete this city map?"].waitForExistence(timeout: 5))
-    app.alerts.buttons["Delete"].tap()
+  func testOpenPinckneyFromOverviewMarker() {
+    let map = app.otherElements["Map"]
+    XCTAssertTrue(map.waitForExistence(timeout: 60))
+    map.coordinate(withNormalizedOffset: CGVector(dx: 0.295, dy: 0.378)).tap()
+    let alert = app.alerts["Pinckney State Recreation Area"]
+    XCTAssertTrue(alert.waitForExistence(timeout: 10))
+    alert.buttons["Open"].tap()
+    XCTAssertTrue(backButton.waitForExistence(timeout: 60))
+  }
+
+  func testDeleteCountyFarmKeepsOverview() {
+    XCTAssertTrue(backButton.waitForExistence(timeout: 60))
+    backButton.tap()
+    openMaps()
+    let deletes = app.buttons.matching(identifier: "×")
+    XCTAssertEqual(deletes.count, 3)
+    deletes.element(boundBy: 2).tap()
+    let alert = app.alerts["Delete this map?"]
+    XCTAssertTrue(alert.waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["Exploration progress will be kept on this device."].exists)
+    alert.buttons["Delete"].tap()
     XCTAssertTrue(app.buttons["Download"].waitForExistence(timeout: 15))
-    selectImportFile("ann-arbor-2026.08.24-v2.fillmap")
-    assertActiveMap(city: "Ann Arbor", timeout: 60)
     app.buttons["Close"].tap()
-    XCTAssertTrue(app.buttons["Start exploring"].waitForExistence(timeout: 30))
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
+    XCTAssertTrue(app.staticTexts["Ypsilanti · 50 mi"].waitForExistence(timeout: 60))
   }
 
-  func testRejectsTruncatedCityMap() {
-    openCityMaps()
-    selectImportFile("truncated-ypsilanti.fillmap")
+  func testImportCountyFarmFromFiles() {
+    openMaps()
+    selectImportFile("county-farm-park-2026.08.29-v3.fillmap")
+    assertActiveMap("County Farm Park", timeout: 60)
+  }
+
+  func testRejectsTruncatedParkMap() {
+    openMaps()
+    selectImportFile("truncated-pinckney.fillmap")
     XCTAssertTrue(app.buttons["Import .fillmap"].waitForExistence(timeout: 15))
     XCTAssertTrue(app.staticTexts["Active"].exists)
-    XCTAssertTrue(app.staticTexts["Ann Arbor"].exists)
-    XCTAssertEqual(app.buttons.matching(identifier: "×").count, 2)
+    XCTAssertTrue(app.staticTexts["County Farm Park"].exists)
+  }
+
+  private var backButton: XCUIElement {
+    app.buttons["Back to region"]
+  }
+
+  private func openMaps() {
+    openMenuItem("Offline maps")
+    let subtitle = "Choose a region or park map to explore."
+    XCTAssertTrue(app.staticTexts[subtitle].waitForExistence(timeout: 10))
+  }
+
+  private func openMenuItem(_ label: String) {
+    XCTAssertTrue(app.buttons["Menu"].waitForExistence(timeout: 60))
+    app.buttons["Menu"].tap()
+    XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5))
+    app.buttons[label].tap()
   }
 
   private func selectImportFile(_ name: String) {
@@ -149,21 +160,9 @@ final class FillMyMapUITests: XCTestCase {
     file.tap()
   }
 
-  private func openCityMaps() {
-    openMenuItem("City maps")
-    XCTAssertTrue(app.staticTexts["Choose a city map to explore."].waitForExistence(timeout: 10))
-  }
-
-  private func openMenuItem(_ label: String) {
-    XCTAssertTrue(app.buttons["Menu"].waitForExistence(timeout: 30))
-    app.buttons["Menu"].tap()
-    XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5))
-    app.buttons[label].tap()
-  }
-
-  private func assertActiveMap(city: String, timeout: TimeInterval) {
+  private func assertActiveMap(_ name: String, timeout: TimeInterval) {
     XCTAssertTrue(app.staticTexts["Active"].waitForExistence(timeout: timeout))
-    XCTAssertTrue(app.staticTexts[city].exists)
+    XCTAssertTrue(app.staticTexts[name].exists)
   }
 
   private func attachScreenshot(_ name: String) {

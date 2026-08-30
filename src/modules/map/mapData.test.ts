@@ -35,10 +35,11 @@ describe("offline map overlays", () => {
   });
 
   it("marks only implemented parks with a downloadable detail pack", () => {
-    const features = placeFeatures([
+    const items = [
       { id: "pinckney", name: "Pinckney", coordinate: [-83.97, 42.42], osmRef: "relation/1", detailPackId: "pinckney-pack" },
       { id: "other", name: "Other park", coordinate: [-83.8, 42.3], osmRef: "way/2", detailPackId: null },
-    ]);
-    expect(features.features.map((feature) => feature.properties?.detailPackId)).toEqual(["pinckney-pack", undefined]);
+    ] as const;
+    expect(placeFeatures(items).features.map((feature) => feature.id)).toEqual(["other"]);
+    expect(placeFeatures(items, true).features[0]?.properties?.detailPackId).toBe("pinckney-pack");
   });
 });

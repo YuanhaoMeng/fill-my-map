@@ -12,3 +12,61 @@ index 22212748b1f1ca2eb73b5a1688ddb848b5c8ab0c..a9c2f392a1b99174d070c66616c838c2
      self.delegate = self;
  
      _pendingInitialLayout = YES;
+diff --git a/ios/components/sources/MLRNSource.m b/ios/components/sources/MLRNSource.m
+index f10165e..5cedd32 100644
+--- a/ios/components/sources/MLRNSource.m
++++ b/ios/components/sources/MLRNSource.m
+@@ -105,0 +106 @@
++    _source = nil;
+diff --git a/ios/components/sources/geojson-source/MLRNGeoJSONSource.m b/ios/components/sources/geojson-source/MLRNGeoJSONSource.m
+index edc36da..f85a423 100644
+--- a/ios/components/sources/geojson-source/MLRNGeoJSONSource.m
++++ b/ios/components/sources/geojson-source/MLRNGeoJSONSource.m
+@@ -1,0 +2 @@
++#import <React/RCTLog.h>
+@@ -32 +33,3 @@
+-    [source setShape:shape == nil ? nil : [MLRNUtils shapeFromGeoJSON:_shape]];
++    MLNShape *next =
++        shape == nil ? nil : [self clusterSafeShape:[MLRNUtils shapeFromGeoJSON:_shape]];
++    [source setShape:next];
+@@ -35,0 +39,25 @@
++- (MLNShape *)clusterSafeShape:(MLNShape *)shape {
++  if (shape == nil || _cluster == nil || [_cluster intValue] != 1) {
++    return shape;
++  }
++  if (![shape isKindOfClass:[MLNShapeCollectionFeature class]]) {
++    return shape;
++  }
++  MLNShapeCollectionFeature *collection = (MLNShapeCollectionFeature *)shape;
++  NSMutableArray<MLNShape<MLNFeature> *> *points =
++      [NSMutableArray arrayWithCapacity:collection.shapes.count];
++  for (MLNShape<MLNFeature> *feature in collection.shapes) {
++    if ([feature isKindOfClass:[MLNPointFeature class]]) {
++      [points addObject:feature];
++    }
++  }
++  NSUInteger dropped = collection.shapes.count - points.count;
++  if (dropped == 0) {
++    return shape;
++  }
++  RCTLogWarn(@"[MLRNGeoJSONSource] source '%@' is clustered but %lu of %lu features are not "
++             @"Point geometries; they were dropped because supercluster cannot index them.",
++             self.id, (unsigned long)dropped, (unsigned long)collection.shapes.count);
++  return [MLNShapeCollectionFeature shapeCollectionWithShapes:points];
++}
++
+@@ -55 +83 @@
+-    MLNShape *shape = [MLRNUtils shapeFromGeoJSON:_shape];
++    MLNShape *shape = [self clusterSafeShape:[MLRNUtils shapeFromGeoJSON:_shape]];
+diff --git a/ios/components/sources/geojson-source/MLRNGeoJSONSourceComponentView.mm b/ios/components/sources/geojson-source/MLRNGeoJSONSourceComponentView.mm
+index 55e5b0e..b594997 100644
+--- a/ios/components/sources/geojson-source/MLRNGeoJSONSourceComponentView.mm
++++ b/ios/components/sources/geojson-source/MLRNGeoJSONSourceComponentView.mm
+@@ -64,0 +65,7 @@
++- (void)prepareForRecycle {
++  [super prepareForRecycle];
++  static const auto defaultProps = std::make_shared<const MLRNGeoJSONSourceProps>();
++  _props = defaultProps;
++  [self prepareView];
++}
++
