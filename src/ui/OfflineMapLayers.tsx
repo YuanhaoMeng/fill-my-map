@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import type { MapContent } from "../modules/app/useAppRuntime";
 import { theme } from "./theme";
 
-export function OfflineMapLayers({ map, mapKey, onPlacePress }: { map: MapContent; mapKey: string; onPlacePress: (id: string | null, name: string) => void }) {
+export function OfflineMapLayers({ map, mapKey }: { map: MapContent; mapKey: string }) {
   const id = (name: string) => `${name}-${mapKey}`;
   return (
     <>
@@ -63,10 +63,6 @@ export function OfflineMapLayers({ map, mapKey, onPlacePress }: { map: MapConten
         cluster
         clusterMaxZoom={11}
         clusterRadius={35}
-        onPress={(event) => {
-          const properties = event.nativeEvent.features[0]?.properties;
-          if (properties?.name) onPlacePress(properties.detailPackId ? String(properties.detailPackId) : null, String(properties.name));
-        }}
       >
         <Layer id={id("park-clusters")} type="circle" filter={["has", "point_count"]} paint={{ "circle-color": theme.colors.muted, "circle-opacity": 0.35, "circle-radius": 7 }} />
         <Layer id={id("park-halo")} type="circle" filter={["!", ["has", "point_count"]]} paint={{ "circle-color": theme.colors.explored, "circle-opacity": 0.18, "circle-radius": 7 }} />
@@ -80,11 +76,6 @@ export function OfflineMapLayers({ map, mapKey, onPlacePress }: { map: MapConten
       {map.detailPlaces.features.length ? <GeoJSONSource
         id={id("detail-places")}
         data={map.detailPlaces}
-        hitbox={{ top: 18, right: 18, bottom: 18, left: 18 }}
-        onPress={(event) => {
-          const properties = event.nativeEvent.features[0]?.properties;
-          if (properties?.name && properties.detailPackId) onPlacePress(String(properties.detailPackId), String(properties.name));
-        }}
       >
         <Layer id={id("detail-park-halo")} type="circle" paint={{ "circle-color": theme.colors.explored, "circle-opacity": 0.28, "circle-radius": 11 }} />
         <Layer id={id("detail-park-dot")} type="circle" paint={{ "circle-color": theme.colors.explored, "circle-radius": 5, "circle-stroke-width": 1 }} />

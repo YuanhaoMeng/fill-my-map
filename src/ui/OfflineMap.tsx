@@ -8,6 +8,7 @@ import type { MapContent } from "../modules/app/useAppRuntime";
 import { theme } from "./theme";
 import { nextCameraFollowState, type CameraFollowState } from "./cameraFollow";
 import { OfflineMapLayers } from "./OfflineMapLayers";
+import { placeHit, placeHitBounds } from "./placeHit";
 import { shareCameraStop } from "./shareCamera";
 
 export function OfflineMap({
@@ -100,9 +101,23 @@ export function OfflineMap({
             if (properties?.id) onEdgeLongPress(String(properties.id), String(properties.state));
           });
       }}
+      onPress={(event) => {
+        const layers = [
+          `detail-park-dot-${mapKey}`,
+          `detail-park-halo-${mapKey}`,
+          `park-dot-${mapKey}`,
+          `park-halo-${mapKey}`,
+        ];
+        void mapRef.current
+          ?.queryRenderedFeatures(placeHitBounds(event.nativeEvent.point), { layers })
+          .then((features) => {
+            const hit = placeHit(features);
+            if (hit) onPlacePress(hit.id, hit.name);
+          });
+      }}
     >
       <Camera ref={cameraRef} initialViewState={{ bounds: [...map.bounds] }} />
-      {mapReady ? <OfflineMapLayers map={map} mapKey={mapKey} onPlacePress={onPlacePress} /> : null}
+      {mapReady ? <OfflineMapLayers map={map} mapKey={mapKey} /> : null}
       {mapReady && showUserLocation ? <UserLocation /> : null}
       </Map>
       <Text style={styles.attribution}>{t("attribution")}</Text>
