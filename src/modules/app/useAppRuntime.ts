@@ -5,6 +5,7 @@ import { GpxExporter } from "../history/GpxExporter";
 import { trackFeature } from "../map/mapData";
 import { withoutRawTrack } from "../share/shareSnapshot";
 import type { CityCatalogEntry, InstalledCity } from "../regions/cityPackTypes";
+import { loadCatalogLocalFirst } from "../regions/localFirstCatalog";
 import { initializeRuntime } from "./initializeRuntime";
 import { loadInstalledProgress } from "./loadInstalledProgress";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
@@ -145,7 +146,14 @@ async function boot(
   const [installed, active, catalog] = await Promise.all([
     repository.listInstalled(),
     repository.getActive(),
-    repository.loadCatalog().catch(() => ({ formatVersion: 1 as const, cities: [] })),
+    loadCatalogLocalFirst(
+      () => repository.loadCachedCatalog(),
+      () => repository.loadCatalog(),
+      (fresh) => setState((current) => ({
+        ...current,
+        maps: { ...current.maps, catalog: fresh.cities },
+      })),
+    ),
   ]);
   setState((current) => ({
     ...current,

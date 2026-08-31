@@ -23,6 +23,16 @@ export class FileCityMapRepository {
     return this.catalogRequest;
   }
 
+  async loadCachedCatalog(): Promise<CityCatalog> {
+    const cached = new File(Paths.cache, "fill-my-map-catalog.json");
+    if (!cached.exists) return { formatVersion: 2, cities: [] };
+    try {
+      return parseCityCatalog(await cached.json());
+    } catch {
+      return { formatVersion: 2, cities: [] };
+    }
+  }
+
   private async fetchCatalog(): Promise<CityCatalog> {
     const destination = new File(Paths.cache, "fill-my-map-catalog.json");
     const downloaded = await File.downloadFileAsync(CATALOG_URL, destination, { idempotent: true });
