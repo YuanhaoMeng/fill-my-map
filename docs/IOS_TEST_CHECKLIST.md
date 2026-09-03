@@ -17,14 +17,15 @@
 - [x] Fresh offline launch installs and opens the bundled overview without a map picker.
 - [x] Upgrade removes the old 112 MB overview and opens the new background.
 - [x] Overview shows all 21 park entries around Ypsilanti without interaction lag.
-- [ ] Tapping Pinckney downloads, opens, and returns to overview without visible delay.
+- [x] Tapping Pinckney downloads, opens, and returns to overview in under four seconds per local switch.
 - [ ] Tapping an unavailable park remains informational and does not start exploration.
-- [ ] Park Start obtains a first location, recenters, and follows the user.
-- [ ] Drag suspends follow and Resume restores it.
-- [ ] Matched trail portions repaint immediately and survive a cold launch.
-- [ ] Finish fits the park and opens a privacy-safe screenshot preview.
+- [x] Park Start obtains a first location, recenters, and follows the user.
+- [x] Drag suspends follow and Resume restores it.
+- [x] Matched trail portions repaint immediately and survive a cold launch.
+- [x] Finish fits the park and opens a privacy-safe screenshot preview.
 - [ ] Airplane-mode cold launch opens overview and every already-downloaded park.
-- [ ] Denied permission, corrupt archive, interrupted download, and low storage are recoverable.
+- [x] Denied location permission is recoverable.
+- [ ] Corrupt archive, interrupted download, and low storage are recoverable.
 
 ## Real iPhone / field work (must not be simulated)
 

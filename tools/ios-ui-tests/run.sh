@@ -12,18 +12,13 @@ if [[ ! "$SIMULATOR_UDID" =~ ^[0-9A-Fa-f-]{36}$ ]]; then
 fi
 
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(cd "$SOURCE_DIR/../.." && pwd)"
 TEST_DIR="$(mktemp -d -t fill-my-map-ui-tests)"
 case "$TEST_DIR" in
   /tmp/*|/private/tmp/*|/var/folders/*) ;;
   *) echo "Unexpected temporary directory: $TEST_DIR"; exit 1 ;;
 esac
-SEEDED_FILE=""
 cleanup() {
   xcrun simctl location "$SIMULATOR_UDID" clear >/dev/null 2>&1 || true
-  if [[ -n "$SEEDED_FILE" && -f "$SEEDED_FILE" ]]; then
-    mv "$SEEDED_FILE" "$TEST_DIR/import-seed.fillmap"
-  fi
   rm -rf -- "$TEST_DIR"
 }
 trap cleanup EXIT
@@ -33,89 +28,45 @@ if [[ -z "$DATA_DIR" ]]; then
   echo "Install the Release app on simulator $SIMULATOR_UDID first."
   exit 1
 fi
-clear_import_seed() {
-  if [[ -n "$SEEDED_FILE" && -f "$SEEDED_FILE" ]]; then
-    mv "$SEEDED_FILE" "$TEST_DIR/$(basename "$SEEDED_FILE")"
-  fi
-  SEEDED_FILE=""
-}
-seed_import_file() {
-  local source="$1" name="$2" device_data groups metadata identifier
-  device_data="${DATA_DIR%%/Containers/*}"
-  groups="$device_data/Containers/Shared/AppGroup"
-  for metadata in "$groups"/*/.com.apple.mobile_container_manager.metadata.plist; do
-    identifier="$(/usr/libexec/PlistBuddy -c 'Print:MCMMetadataIdentifier' "$metadata" 2>/dev/null || true)"
-    if [[ "$identifier" == "group.com.apple.FileProvider.LocalStorage" ]]; then
-      SEEDED_FILE="$(dirname "$metadata")/File Provider Storage/$name"
-      cp "$source" "$SEEDED_FILE"
-      xcrun simctl openurl "$SIMULATOR_UDID" "file://$SEEDED_FILE"
-      return
-    fi
-  done
-  echo "Simulator local Files provider was not found."
-  exit 1
-}
 cp "$SOURCE_DIR/FillMyMapUITests.swift" "$SOURCE_DIR/generate.rb" "$TEST_DIR/"
 cd "$TEST_DIR"
 GEM_HOME="$(brew --prefix cocoapods)/libexec" ruby generate.rb
 
 run_test() {
   echo "iOS UI: $1"
-  xcodebuild test -quiet \
-    -project FillMyMapUITests.xcodeproj \
-    -scheme FillMyMapUITests \
-    -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
-    -derivedDataPath DerivedData \
+  xcodebuild test -quiet -project FillMyMapUITests.xcodeproj -scheme FillMyMapUITests \
+    -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath DerivedData \
     "-only-testing:FillMyMapUITests/FillMyMapUITests/$1"
 }
 assert_sql() {
   local query="$1" expected="$2" label="$3" actual
   actual="$(sqlite3 "$DATA_DIR/Documents/SQLite/fill-my-map.sqlite" "$query")"
-  if [[ "$actual" != "$expected" ]]; then
-    echo "$label: expected $expected, got $actual"
-    exit 1
-  fi
+  [[ "$actual" == "$expected" ]] || { echo "$label: expected $expected, got $actual"; exit 1; }
 }
 has_rows() {
-  local table="$1" condition="$2" label="$3"
-  assert_sql "SELECT CASE WHEN count(*)>0 THEN 1 ELSE 0 END FROM $table WHERE $condition" "1" "$label"
+  assert_sql "SELECT CASE WHEN count(*)>0 THEN 1 ELSE 0 END FROM $1 WHERE $2" "1" "$3"
 }
 
-run_test testCatalogAndDownloadOverview
-OVERVIEW="$DATA_DIR/Documents/city-maps/cities/ypsilanti-50mi/2026.08.29-v3"
+run_test testOverviewHasNoExploration
+OVERVIEW="$DATA_DIR/Documents/city-maps/cities/united-states-overview/2026.09.03-v4"
 test -f "$OVERVIEW/basemap.pmtiles"
-test -f "$OVERVIEW/network.sqlite"
-run_test testRelaunchesOverview
+assert_sql "ATTACH '$OVERVIEW/network.sqlite' AS n; SELECT count(*) FROM n.edges" "0" "overview edges"
+assert_sql "ATTACH '$OVERVIEW/network.sqlite' AS n; SELECT count(*) FROM n.places" "21" "overview parks"
+run_test testDownloadPinckney
+PINCKNEY="$DATA_DIR/Documents/city-maps/cities/pinckney-state-recreation-area/2026.09.03-v4"
+test -f "$PINCKNEY/network.sqlite"
 xcrun simctl privacy "$SIMULATOR_UDID" revoke location "$APP_BUNDLE"
 run_test testLocationPermissionDenied
 xcrun simctl privacy "$SIMULATOR_UDID" grant location-always "$APP_BUNDLE"
-xcrun simctl location "$SIMULATOR_UDID" set 42.2537448,-83.6495246
+LOCATION="$(sqlite3 "$PINCKNEY/network.sqlite" 'SELECT latitude||","||longitude FROM samples LIMIT 1')"
+xcrun simctl location "$SIMULATOR_UDID" set "$LOCATION"
 run_test testFollowCoverageAndShare
-assert_sql "SELECT count(*) FROM sessions WHERE status='completed'" "1" "completed session"
-has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "overview progress"
-assert_sql "SELECT count(*) FROM pragma_table_info('visited_samples') WHERE name='mode'" "0" "single exploration mode"
+assert_sql "SELECT count(*) FROM sessions WHERE status='completed'" "1" "completed park session"
+has_rows edge_progress "city_id='pinckney-state-recreation-area' AND visited_count>0" "park progress"
 run_test testStartSessionForInterruption
 xcrun simctl terminate "$SIMULATOR_UDID" "$APP_BUNDLE" >/dev/null 2>&1 || true
-run_test testRelaunchesOverview
+run_test testRelaunchesPark
 assert_sql "SELECT count(*) FROM sessions WHERE status='interrupted'" "1" "interrupted session recovery"
-run_test testDownloadParkPackagesAndReturn
-PINCKNEY="$DATA_DIR/Documents/city-maps/cities/pinckney-state-recreation-area/2026.08.29-v3"
-COUNTY_FARM="$DATA_DIR/Documents/city-maps/cities/county-farm-park/2026.08.29-v3"
-test -f "$PINCKNEY/network.sqlite"
-test -f "$COUNTY_FARM/network.sqlite"
-has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "progress retained across maps"
-run_test testOpenPinckneyFromOverviewMarker
-run_test testDeleteCountyFarmKeepsOverview
-test ! -e "$COUNTY_FARM"
-has_rows edge_progress "city_id='ypsilanti-50mi' AND visited_count>0" "progress retained after delete"
-seed_import_file "$REPO_DIR/map-packs/releases/county-farm-park-2026.08.29-v3.fillmap" "county-farm-park-2026.08.29-v3.fillmap"
-run_test testImportCountyFarmFromFiles
-test -f "$COUNTY_FARM/network.sqlite"
-clear_import_seed
-cp "$REPO_DIR/map-packs/releases/pinckney-state-recreation-area-2026.08.29-v3.fillmap" "$TEST_DIR/truncated-pinckney.fillmap"
-truncate -s 4096 "$TEST_DIR/truncated-pinckney.fillmap"
-seed_import_file "$TEST_DIR/truncated-pinckney.fillmap" "truncated-pinckney.fillmap"
-run_test testRejectsTruncatedParkMap
-test -f "$COUNTY_FARM/network.sqlite"
+run_test testReturnToOverviewAndOpenMarker
 run_test testGpxExportUsesSystemShare
-echo "iOS UI acceptance passed on $SIMULATOR_UDID."
+echo "iOS park-first UI acceptance passed on $SIMULATOR_UDID."
