@@ -26,6 +26,7 @@ export function HomeScreen() {
   const [captureRequest, setCaptureRequest] = useState(0);
   const [shareImage, setShareImage] = useState<string | null>(null);
   const capabilities = mapCapabilities(runtime.maps.active?.manifest);
+  const overview = runtime.maps.active?.manifest.kind === "overview";
   const disabled = runtime.status !== "ready" || !capabilities.exploration;
   const activeProgress = runtime.progress.find((progress) =>
     progress.cityId === runtime.maps.active?.manifest.id &&
@@ -40,9 +41,10 @@ export function HomeScreen() {
           mapKey={`${runtime.maps.active?.manifest.id ?? "none"}-${runtime.maps.active?.manifest.version ?? "none"}`}
           status={runtime.status}
           map={runtime.map}
-          showUserLocation={Boolean(runtime.session)}
+          showUserLocation={overview || Boolean(runtime.session)}
           followSessionId={runtime.session?.id}
           userCoordinate={runtime.userCoordinate}
+          onLocate={overview ? runtime.locate : undefined}
           onEdgeLongPress={(id, state) =>
             promptExclusion(id, state, t, runtime.exclude, runtime.undoExclusion)
           }

@@ -49,4 +49,5 @@ export interface RuntimeResources {
   loadProgress?: () => Promise<readonly CityProgress[]>;
   listMissing?: () => Promise<readonly MissingEdge[]>;
   dispose?: () => Promise<void>;
+  locate?: () => Promise<Coordinate | undefined>;
 }

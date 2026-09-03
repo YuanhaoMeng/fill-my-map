@@ -11,8 +11,12 @@ final class FillMyMapUITests: XCTestCase {
 
   func testOverviewHasNoExploration() {
     XCTAssertTrue(app.otherElements["Map"].waitForExistence(timeout: 60))
+    if app.buttons["Back to region"].exists {
+      app.buttons["Back to region"].tap()
+    }
     XCTAssertTrue(app.staticTexts["Tap a park to open or download its trail map."].exists)
     XCTAssertFalse(app.buttons["Start exploring"].exists)
+    XCTAssertTrue(app.buttons["Center on my location"].exists)
     openMaps()
     XCTAssertTrue(app.staticTexts["Pinckney State Recreation Area"].waitForExistence(timeout: 20))
     XCTAssertEqual(downloadButtons.count, 21)

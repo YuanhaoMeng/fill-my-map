@@ -10,6 +10,7 @@ import type {
   SessionSummary,
   TrackingSession,
   TrackPoint,
+  Coordinate,
 } from "./types";
 
 export interface LocationRecorder {
@@ -18,6 +19,11 @@ export interface LocationRecorder {
   stop(): Promise<void>;
   isRecording(): Promise<boolean>;
   subscribe(listener: (points: readonly TrackPoint[]) => void): () => void;
+}
+
+export interface ForegroundLocator {
+  start(listener: (coordinate: Coordinate) => void): Promise<Coordinate | undefined>;
+  stop(): void;
 }
 
 export interface MatchCandidate extends CoverageSample {

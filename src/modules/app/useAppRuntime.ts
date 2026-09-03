@@ -108,6 +108,11 @@ export function useAppRuntime() {
     setState((current) => ({ ...current, progress, rewards: [] }));
   };
   const listMissing = async () => resources.current.listMissing?.() ?? [];
+  const locate = async () => {
+    const coordinate = await resources.current.locate?.();
+    if (coordinate) setState((current) => ({ ...current, userCoordinate: coordinate }));
+    return coordinate;
+  };
   const viewSession = async (session: SessionSummary) => {
     const points = await resources.current.history?.getTrack(session.id);
     if (points) setState((current) => ({
@@ -133,6 +138,7 @@ export function useAppRuntime() {
     resetAllData,
     viewSession,
     listMissing,
+    locate,
   };
 }
 

@@ -7,6 +7,7 @@ import { useMessages } from "../i18n/useMessages";
 import type { MapContent } from "../modules/app/useAppRuntime";
 import { theme } from "./theme";
 import { nextCameraFollowState, type CameraFollowState } from "./cameraFollow";
+import { shouldAutoFollow, userViewportBounds } from "./cameraPolicy";
 import { OfflineMapLayers } from "./OfflineMapLayers";
 import { placeHit, placeHitBounds } from "./placeHit";
 import { shareCameraStop } from "./shareCamera";
@@ -22,6 +23,7 @@ export function OfflineMap({
   captureRequest,
   onCapture,
   onPlacePress,
+  onLocate,
 }: {
   status: "loading" | "needs-map" | "ready" | "error";
   map?: MapContent;
@@ -33,6 +35,7 @@ export function OfflineMap({
   captureRequest?: number;
   onCapture?: (uri: string) => void;
   onPlacePress: (id: string | null, name: string) => void;
+  onLocate?: () => Promise<Coordinate | undefined>;
 }) {
   const captureViewRef = useRef<View>(null);
   const mapRef = useRef<MapRef>(null);
@@ -43,9 +46,10 @@ export function OfflineMap({
   const pendingCapture = useRef<number | null>(null);
   const { t } = useMessages();
   const suspended = Boolean(followSessionId && suspendedFor === followSessionId);
-  const follow: CameraFollowState = !showUserLocation
+  const insideBoundary = Boolean(map && shouldAutoFollow(Boolean(followSessionId), userCoordinate, map.boundaries));
+  const follow: CameraFollowState = !followSessionId
     ? "inactive"
-    : suspended ? "suspended" : userCoordinate ? "following" : "waiting";
+    : suspended ? "suspended" : insideBoundary ? "following" : "waiting";
   useEffect(() => {
     if (!mapReady || follow !== "following" || !userCoordinate) return;
     cameraRef.current?.flyTo({
@@ -122,7 +126,7 @@ export function OfflineMap({
       {mapReady && showUserLocation ? <UserLocation /> : null}
       </Map>
       <Text style={styles.attribution}>{t("attribution")}</Text>
-      {showUserLocation && follow === "suspended" ? (
+      {showUserLocation && insideBoundary && follow === "suspended" ? (
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.followButton}
@@ -132,6 +136,21 @@ export function OfflineMap({
           }}
         >
           <Text style={styles.followText}>{t("resumeFollow")}</Text>
+        </TouchableOpacity>
+      ) : null}
+      {onLocate ? (
+        <TouchableOpacity
+          accessibilityLabel={t("centerMap")}
+          accessibilityRole="button"
+          style={styles.followButton}
+          onPress={() => void onLocate().then((coordinate) => {
+            if (coordinate) void cameraRef.current?.setStop({
+              bounds: userViewportBounds(coordinate),
+              duration: 700,
+            });
+          })}
+        >
+          <Text style={styles.followText}>◎</Text>
         </TouchableOpacity>
       ) : null}
     </View>

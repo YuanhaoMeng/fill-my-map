@@ -1,4 +1,5 @@
 import { CityNetworkRepository } from "../../platform/database/CityNetworkRepository";
+import { ExpoForegroundLocator } from "../../platform/location/ExpoForegroundLocator";
 import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures, partialCoverageFeatures, placeFeatures } from "../map/mapData";
 import { offlineStyle } from "../map/offlineStyle";
 import type { InstalledCity } from "../regions/cityPackTypes";
@@ -12,8 +13,14 @@ export async function initializeOverviewRuntime(
   files: InstalledCity,
 ) {
   const network = await CityNetworkRepository.open(files.networkUri);
+  const locator = new ExpoForegroundLocator();
   const places = await network.listPlaces();
-  resources.current.dispose = () => network.close();
+  resources.current.locate = () => locator.start((userCoordinate) =>
+    setState((current) => ({ ...current, userCoordinate })));
+  resources.current.dispose = async () => {
+    locator.stop();
+    await network.close();
+  };
   setState((current) => ({
     ...current,
     status: "ready",
