@@ -1,6 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { basemap, createdAt, dnrParkSource, dnrSource, osmSources, packages, packVersion } from "./config-v2.mjs";
+import { resolveDnrPark } from "./dnr-park-area.mjs";
 import { download, ensureDirectories, requireCommand, run, sha256 } from "./lib.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -17,7 +18,8 @@ run("node", [resolve(import.meta.dirname, "fetch-dnr.mjs"), dnrPath]);
 const dnrParksPath = resolve(cache, dnrParkSource.snapshot);
 run("node", [resolve(import.meta.dirname, "fetch-dnr-parks.mjs"), dnrParksPath]);
 
-for (const item of packages) {
+for (const configured of packages) {
+  const item = resolveDnrPark(configured, dnrParksPath);
   const work = resolve(workRoot, item.id);
   const output = resolve(outputRoot, item.id);
   rmSync(work, { recursive: true, force: true });
@@ -62,6 +64,12 @@ function prepareBoundary(item, output) {
       String(item.center[0]), String(item.center[1]), String(item.radiusMiles)]);
     return;
   }
+  if (item.dnrGeometry) {
+    writeFileSync(output, `${JSON.stringify({
+      type: "Feature", id: item.osmRef, properties: { name: item.name }, geometry: item.dnrGeometry,
+    })}\n`);
+    return;
+  }
   const source = osmSources.find((candidate) => candidate.id === item.sourceIds[0]);
   const pbf = resolve(import.meta.dirname, "cache", source.snapshot);
   const object = item.osmRef.replace("relation/", "r").replace("way/", "w");
@@ -88,7 +96,7 @@ async function writePackageFiles(item, output, network, basemapPath) {
   if (item.officialSource) selectedSources.push({
     name: dnrSource.name, snapshot: dnrSource.snapshot, url: dnrSource.url, license: "Michigan public record",
   });
-  if (item.kind === "overview") selectedSources.push({
+  if (item.kind === "overview" || item.dnrGeometry) selectedSources.push({
     name: dnrParkSource.name, snapshot: dnrParkSource.snapshot, url: dnrParkSource.url, license: "Michigan public record",
   });
   selectedSources.push({
@@ -104,5 +112,5 @@ async function writePackageFiles(item, output, network, basemapPath) {
   };
   writeFileSync(resolve(output, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(resolve(output, "LICENSE.txt"),
-    "Map data © OpenStreetMap contributors, ODbL 1.0.\nMichigan DNR public-record data is used for Pinckney route validation.\n");
+    "Map data © OpenStreetMap contributors, ODbL 1.0.\nMichigan DNR public-record data supplies park boundaries and route validation.\n");
 }

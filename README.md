@@ -20,8 +20,8 @@ trail network you visit.
 
 The current pilot shows the 21 Michigan state parks and recreation areas whose
 official DNR project boundaries intersect a 50-mile radius around Ypsilanti.
-Pinckney State Recreation Area is the first downloadable detail package and uses
-OSM trail geometry with Michigan DNR official route-name validation.
+All 21 have separate on-demand trail packages. Pinckney State Recreation Area
+also uses Michigan DNR data to validate official route names.
 
 ## Development
 
@@ -66,8 +66,8 @@ Fill My Map 是一款本地优先、开源的 iOS 公园步道探索 App。安�
 - 无账号、遥测、广告、云同步或轨迹上传。
 
 当前测试版显示 Michigan DNR 官方边界与 Ypsilanti 50 英里圆相交的 21 个
-州立公园和游憩区。Pinckney State Recreation Area 是首个可下载详情包，
-使用 OSM 步道几何，并由 Michigan DNR 数据核验正式路线名。
+州立公园和游憩区，且 21 个地点均有独立的按需下载步道包。Pinckney State
+Recreation Area 还使用 Michigan DNR 数据核验正式路线名。
 
 ## 本地开发
 

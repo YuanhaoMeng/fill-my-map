@@ -31,7 +31,7 @@ copyFileSync(
   resolve(assetDirectory, "united-states-overview.zip"),
 );
 writeFileSync(resolve(root, "docs/maps/catalog.json"),
-  `${JSON.stringify({ formatVersion: 2, packages: entries }, null, 2)}\n`);
+  `${JSON.stringify({ formatVersion: 2, packages: entries })}\n`);
 
 function fileSize(path) {
   return Number(execFileSync("stat", ["-f", "%z", path], { encoding: "utf8" }).trim());

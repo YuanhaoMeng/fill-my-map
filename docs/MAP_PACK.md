@@ -10,7 +10,7 @@ For the v2 pilot, `pnpm map:build:v2`:
 3. deduplicates those boundaries into 21 state park/recreation-area entry points;
 4. creates an overview SQLite file with zero roads and zero exploration samples;
 5. extracts the continental United States from fixed Protomaps tiles at z0–7;
-6. builds the Pinckney boundary and public OSM trail network at z0–15;
+6. builds 21 separate park boundaries and public OSM trail networks at z0–15;
 7. matches Pinckney OSM segments to nearby Michigan DNR official trail names;
 8. samples park trails about every 15 metres and builds SQLite plus R-Tree;
 9. writes provenance, ODbL, bounds, version, and SHA-256 metadata;
@@ -30,5 +30,5 @@ tracked as an App asset and checked against a hard 20 MB budget.
 
 `pnpm map:verify` checks each database, profile, fixed counts, PMTiles layers and
 bounds, hashes, archive allowlist, catalog, license, park links, DNR provenance,
-and formal Pinckney route names. Current verified totals: two packages, 21 parks,
-365 trail segments, and 13,026 samples. The overview contributes no network data.
+and formal Pinckney route names. Current verified totals: 22 packages, 21 parks,
+4,432 trail segments, and 131,987 samples. The overview contributes no network data.

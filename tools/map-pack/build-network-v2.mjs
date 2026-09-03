@@ -105,7 +105,7 @@ function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 function osmNumber(ref) {
-  return ref.startsWith("circle/") ? 0 : Number(ref.split("/")[1]);
+  return ref.startsWith("relation/") || ref.startsWith("way/") ? Number(ref.split("/")[1]) : 0;
 }
 
 function dnrNames(data) {

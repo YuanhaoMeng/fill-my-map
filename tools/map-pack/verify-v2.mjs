@@ -22,7 +22,7 @@ for (const item of packages) {
   });
   const manifest = JSON.parse(readFileSync(paths["manifest.json"], "utf8"));
   await validateManifest(manifest, item, paths);
-  validateTiles(paths["basemap.pmtiles"], item.tileBbox ?? item.bbox, item.maxZoom ?? 15);
+  validateTiles(paths["basemap.pmtiles"], item.tileBbox ?? manifest.bounds.join(","), item.maxZoom ?? 15);
   const counts = validateNetwork(paths["network.sqlite"], item);
   totalEdges += counts.edges;
   totalSamples += counts.samples;
@@ -93,7 +93,8 @@ function validateOverviewPlaces(db, count) {
   if (count !== 21) throw new Error("Overview park inventory is unexpectedly small");
   const details = db.prepare("SELECT detail_pack_id FROM places WHERE detail_pack_id IS NOT NULL ORDER BY detail_pack_id")
     .all().map((row) => row.detail_pack_id);
-  if (details.join(",") !== "pinckney-state-recreation-area") {
+  const expected = packages.filter((item) => item.kind === "place").map((item) => item.id).sort();
+  if (details.join(",") !== expected.join(",")) {
     throw new Error("Overview detail park links are incomplete");
   }
 }

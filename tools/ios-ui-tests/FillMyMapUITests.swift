@@ -15,14 +15,15 @@ final class FillMyMapUITests: XCTestCase {
     XCTAssertFalse(app.buttons["Start exploring"].exists)
     openMaps()
     XCTAssertTrue(app.staticTexts["Pinckney State Recreation Area"].waitForExistence(timeout: 20))
-    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 1)
+    XCTAssertEqual(downloadButtons.count, 21)
   }
 
   func testDownloadPinckney() {
     openMaps()
-    XCTAssertTrue(app.buttons["Download"].waitForExistence(timeout: 20))
-    XCTAssertEqual(app.buttons.matching(identifier: "Download").count, 1)
-    app.buttons["Download"].tap()
+    let download = app.buttons["Download Pinckney State Recreation Area"]
+    XCTAssertTrue(download.waitForExistence(timeout: 20))
+    XCTAssertEqual(downloadButtons.count, 21)
+    download.tap()
     XCTAssertTrue(app.staticTexts["Active"].waitForExistence(timeout: 180))
     XCTAssertTrue(app.staticTexts["Pinckney State Recreation Area"].exists)
     app.buttons["Close"].tap()
@@ -97,6 +98,10 @@ final class FillMyMapUITests: XCTestCase {
   private func openMaps() {
     openMenuItem("Offline maps")
     XCTAssertTrue(app.staticTexts["Choose a region or park map to explore."].waitForExistence(timeout: 10))
+  }
+
+  private var downloadButtons: XCUIElementQuery {
+    app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Download '"))
   }
 
   private func openMenuItem(_ label: String) {

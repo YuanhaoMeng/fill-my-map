@@ -48,12 +48,12 @@ has_rows() {
 }
 
 run_test testOverviewHasNoExploration
-OVERVIEW="$DATA_DIR/Documents/city-maps/cities/united-states-overview/2026.09.03-v4"
+OVERVIEW="$DATA_DIR/Documents/city-maps/cities/united-states-overview/2026.09.03-v5"
 test -f "$OVERVIEW/basemap.pmtiles"
 assert_sql "ATTACH '$OVERVIEW/network.sqlite' AS n; SELECT count(*) FROM n.edges" "0" "overview edges"
 assert_sql "ATTACH '$OVERVIEW/network.sqlite' AS n; SELECT count(*) FROM n.places" "21" "overview parks"
 run_test testDownloadPinckney
-PINCKNEY="$DATA_DIR/Documents/city-maps/cities/pinckney-state-recreation-area/2026.09.03-v4"
+PINCKNEY="$DATA_DIR/Documents/city-maps/cities/pinckney-state-recreation-area/2026.09.03-v5"
 test -f "$PINCKNEY/network.sqlite"
 xcrun simctl privacy "$SIMULATOR_UDID" revoke location "$APP_BUNDLE"
 run_test testLocationPermissionDenied

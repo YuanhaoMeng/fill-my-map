@@ -7,7 +7,7 @@
 - [x] Overview has no exploration, location, coverage, exclusion, or reward capability.
 - [x] Overview contains 0 roads, 0 samples, and 21 official DNR park entries.
 - [x] Continental-US z0–7 overview archive is 18.7 MB and below the 20 MB budget.
-- [x] Pinckney is a separate 2.9 MB on-demand park package.
+- [x] All 21 parks have separate on-demand packages (39.6 MB total, none bundled).
 - [x] County Farm and obsolete overview packages are removed during migration.
 - [x] Partial coverage restart, package isolation, camera follow, and share-privacy unit tests pass.
 - [x] Release `.app` embeds exactly one overview archive and no park package.

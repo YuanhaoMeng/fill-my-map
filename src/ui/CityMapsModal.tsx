@@ -63,8 +63,8 @@ export function CityMapsModal({
                   ) : null}
                 </View>
                 {selected ? <Text style={styles.active}>{t("active")}</Text> : local
-                  ? <Button label={t("open")} onPress={() => void onActivate(local)} />
-                  : <Button disabled={busy} label={busy ? `${t("downloading")} ${Math.round((downloadProgress ?? 0) * 100)}%` : t("download")} onPress={() => void onDownload(entry)} />}
+                  ? <Button accessibilityLabel={`${t("open")} ${entry.displayName}`} label={t("open")} onPress={() => void onActivate(local)} />
+                  : <Button accessibilityLabel={`${t("download")} ${entry.displayName}`} disabled={busy} label={busy ? `${t("downloading")} ${Math.round((downloadProgress ?? 0) * 100)}%` : t("download")} onPress={() => void onDownload(entry)} />}
                 {local ? (
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -87,9 +87,9 @@ export function CityMapsModal({
   );
 }
 
-function Button({ label, disabled, onPress }: { label: string; disabled?: boolean; onPress: () => void }) {
+function Button({ accessibilityLabel, label, disabled, onPress }: { accessibilityLabel?: string; label: string; disabled?: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.button, disabled && styles.disabled]}>
+    <TouchableOpacity accessibilityLabel={accessibilityLabel} accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.button, disabled && styles.disabled]}>
       <Text style={styles.buttonText}>{label}</Text>
     </TouchableOpacity>
   );

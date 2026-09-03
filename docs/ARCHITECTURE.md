@@ -30,7 +30,7 @@ SHA-256 checks, then an atomic move. Installed packages contain:
 Format v2 supports `overview` and `place` package kinds. The v4 overview uses the
 `none` network profile: zero roads, samples, progress, location, or rewards. Its
 21 park points come from official DNR project boundaries intersecting the
-Ypsilanti 50-mile radius. Pinckney currently links to a downloadable trail pack.
+Ypsilanti 50-mile radius. Every point links to its own downloadable trail pack.
 
 One package is active; switching and deletion are blocked during an exploration.
 The bundled overview cannot be offered as a download and replaces obsolete
