@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { packages, packVersion, releaseBaseUrl } from "./config-v2.mjs";
 import { sha256 } from "./lib.mjs";
@@ -22,6 +22,14 @@ for (const item of packages) {
     sha256: await sha256(archive), downloadUrl: `${releaseBaseUrl}/${name}`,
   });
 }
+const overview = packages.find((item) => item.kind === "overview");
+if (!overview) throw new Error("Missing overview package");
+const assetDirectory = resolve(root, "assets/maps");
+mkdirSync(assetDirectory, { recursive: true });
+copyFileSync(
+  resolve(release, `${overview.id}-${packVersion}.fillmap`),
+  resolve(assetDirectory, "united-states-overview.zip"),
+);
 writeFileSync(resolve(root, "docs/maps/catalog.json"),
   `${JSON.stringify({ formatVersion: 2, packages: entries }, null, 2)}\n`);
 

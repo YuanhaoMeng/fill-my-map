@@ -5,9 +5,7 @@ import { GpxExporter } from "../history/GpxExporter";
 import { trackFeature } from "../map/mapData";
 import { withoutRawTrack } from "../share/shareSnapshot";
 import type { CityCatalogEntry, InstalledCity } from "../regions/cityPackTypes";
-import { loadCatalogLocalFirst } from "../regions/localFirstCatalog";
-import { initializeRuntime } from "./initializeRuntime";
-import { loadInstalledProgress } from "./loadInstalledProgress";
+import { bootRuntime } from "./bootRuntime";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 export type { MapContent } from "./runtimeTypes";
 
@@ -31,7 +29,7 @@ export function useAppRuntime() {
     const currentResources: RuntimeResources = {};
     resources.current = currentResources;
     const holder = { current: currentResources };
-    void boot(maps.current, (next) => active && setState(next), holder).catch(() => {
+    void bootRuntime(maps.current, (next) => active && setState(next), holder).catch(() => {
       if (active) setState((current) => ({ ...current, status: "error" }));
     });
     return () => {
@@ -136,35 +134,6 @@ export function useAppRuntime() {
     viewSession,
     listMissing,
   };
-}
-
-async function boot(
-  repository: FileCityMapRepository,
-  setState: (state: RuntimeState | ((current: RuntimeState) => RuntimeState)) => void,
-  resources: { current: RuntimeResources },
-) {
-  const [installed, active, catalog] = await Promise.all([
-    repository.listInstalled(),
-    repository.getActive(),
-    loadCatalogLocalFirst(
-      () => repository.loadCachedCatalog(),
-      () => repository.loadCatalog(),
-      (fresh) => setState((current) => ({
-        ...current,
-        maps: { ...current.maps, catalog: fresh.cities },
-      })),
-    ),
-  ]);
-  setState((current) => ({
-    ...current,
-    status: active ? "loading" : "needs-map",
-    map: undefined,
-    session: null,
-    maps: { catalog: catalog.cities, installed, active },
-  }));
-  const storedProgress = await loadInstalledProgress(installed);
-  setState((current) => ({ ...current, progress: storedProgress }));
-  if (active) await initializeRuntime(setState, resources, active, storedProgress);
 }
 
 async function runAction(

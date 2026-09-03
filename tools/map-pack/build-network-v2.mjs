@@ -7,10 +7,10 @@ import { eligibleForProfile } from "./profile-rules.mjs";
 import { schema } from "./schema.mjs";
 import { nearestDnrTrailName, prepareDnrTrails } from "./trail-names.mjs";
 
-const [boundaryPath, roadPath, parkPath, outputPath, packageId, dnrPath] = process.argv.slice(2);
+const [boundaryPath, roadPath, , outputPath, packageId, dnrPath, dnrParksPath] = process.argv.slice(2);
 const selected = packages.find((item) => item.id === packageId);
-if (!boundaryPath || !roadPath || !parkPath || !outputPath || !selected) {
-  throw new Error("Usage: build-network-v2 boundary roads parks output package-id [dnr]");
+if (!boundaryPath || !roadPath || !outputPath || !selected) {
+  throw new Error("Usage: build-network-v2 boundary roads parks output package-id [dnr] [dnr-parks]");
 }
 const boundaryFeature = parseSequence(boundaryPath).find((item) =>
   item.geometry?.type === "Polygon" || item.geometry?.type === "MultiPolygon");
@@ -27,7 +27,7 @@ metadata.run("region_version", packVersion);
 metadata.run("attribution", "© OpenStreetMap contributors");
 metadata.run("pack_kind", selected.kind);
 metadata.run("network_profile", selected.profile);
-const dnrData = dnrPath ? JSON.parse(readFileSync(dnrPath, "utf8")) : null;
+const dnrData = dnrPath && dnrPath !== "-" ? JSON.parse(readFileSync(dnrPath, "utf8")) : null;
 const dnrTrails = dnrData ? prepareDnrTrails(dnrData) : [];
 if (dnrData) metadata.run("dnr_trail_names", JSON.stringify(dnrNames(dnrData)));
 
@@ -65,44 +65,47 @@ for (const feature of parseSequence(roadPath)) {
 }
 db.exec("COMMIT");
 if (dnrData) metadata.run("dnr_named_edges", String(dnrNamedEdges));
-if (selected.kind === "overview") insertPlaces(db, parkPath, boundaryFeature.geometry);
+if (selected.kind === "overview") insertOfficialPlaces(db, dnrParksPath);
 db.exec("VACUUM");
 db.close();
 
-function insertPlaces(database, path, boundary) {
+function insertOfficialPlaces(database, path) {
+  if (!path || path === "-") throw new Error("Missing official DNR park inventory");
+  const data = JSON.parse(readFileSync(path, "utf8"));
+  const grouped = new Map();
+  for (const feature of data.features ?? []) {
+    const name = feature.properties?.UnitName;
+    if (!name || !feature.geometry) continue;
+    const projectId = String(feature.properties?.ProjectID || slug(name));
+    const current = grouped.get(projectId) ?? { name, positions: [] };
+    current.positions.push(...positions(feature.geometry.coordinates));
+    grouped.set(projectId, current);
+  }
   const insert = database.prepare("INSERT OR IGNORE INTO places VALUES (?, ?, ?, ?, ?, ?)");
-  for (const feature of parseSequence(path)) {
-    if (!parkTags(feature.properties ?? {}) || !feature.geometry) continue;
-    const center = geometryCenter(feature.geometry);
-    if (!center || !contains(boundary, center)) continue;
-    const osmRef = normalizedRef(feature.id);
-    insert.run(feature.id, feature.properties?.name ?? "Unnamed park", center[0], center[1], osmRef, detailPack(osmRef));
+  for (const [projectId, park] of [...grouped].sort((a, b) => a[1].name.localeCompare(b[1].name))) {
+    const center = centerOf(park.positions);
+    const detail = packages.find((item) => item.officialProjectId === projectId)?.id ?? null;
+    insert.run(`dnr-${projectId}`, park.name, center[0], center[1], `dnr-project/${projectId}`, detail);
   }
 }
 
-function parkTags(tags) {
-  return tags.leisure === "park" || tags.leisure === "nature_reserve" ||
-    tags.boundary === "national_park" || tags.boundary === "protected_area";
+function positions(value) {
+  if (!Array.isArray(value)) return [];
+  if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") return [value];
+  return value.flatMap(positions);
 }
-function detailPack(ref) {
-  return ref === "relation/5664016" ? "pinckney-state-recreation-area" :
-    ref === "way/192787288" ? "county-farm-park" : null;
+
+function centerOf(items) {
+  const longitude = items.map((item) => item[0]);
+  const latitude = items.map((item) => item[1]);
+  return [(Math.min(...longitude) + Math.max(...longitude)) / 2, (Math.min(...latitude) + Math.max(...latitude)) / 2];
 }
-function normalizedRef(id) {
-  if (id === "a11328033") return "relation/5664016";
-  if (id === "a192787288") return "way/192787288";
-  return id.startsWith("r") ? `relation/${id.slice(1)}` : id.startsWith("w") ? `way/${id.slice(1)}` : `node/${id.slice(1)}`;
+
+function slug(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 function osmNumber(ref) {
   return ref.startsWith("circle/") ? 0 : Number(ref.split("/")[1]);
-}
-
-function geometryCenter(geometry) {
-  if (geometry.type === "Point") return geometry.coordinates;
-  const coordinates = JSON.stringify(geometry.coordinates).match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
-  const longitude = coordinates.filter((_, index) => index % 2 === 0);
-  const latitude = coordinates.filter((_, index) => index % 2 === 1);
-  return longitude.length ? [(Math.min(...longitude) + Math.max(...longitude)) / 2, (Math.min(...latitude) + Math.max(...latitude)) / 2] : null;
 }
 
 function dnrNames(data) {

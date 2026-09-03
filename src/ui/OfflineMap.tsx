@@ -94,6 +94,7 @@ export function OfflineMap({
         }));
       }}
       onLongPress={(event) => {
+        if (!map.edges.features.length) return;
         void mapRef.current
             ?.queryRenderedFeatures(event.nativeEvent.point, { layers: [`coverage-lines-${mapKey}`, `coverage-excluded-${mapKey}`] })
           .then((features) => {

@@ -5,6 +5,7 @@ import { listContents, unzip } from "react-native-zip-archive";
 import type { CityCatalog, CityCatalogEntry, InstalledCity } from "../../modules/regions/cityPackTypes";
 import { assertCatalogMatch, assertCityArchiveEntries, CITY_PACK_FILES } from "../../modules/regions/validateCityArchive";
 import { parseCityCatalog, parseCityManifest } from "../../modules/regions/validateCityPack";
+import { BUNDLED_OVERVIEW_ID, BUNDLED_OVERVIEW_VERSION, bundledOverviewArchive } from "./bundledOverview";
 
 const CATALOG_URL = "https://yuanhaomeng.github.io/fill-my-map/maps/catalog.json";
 
@@ -66,6 +67,18 @@ export class FileCityMapRepository {
       return await this.readInstalled(directory);
     } catch {
       return null;
+    }
+  }
+
+  async ensureBundledOverview(): Promise<InstalledCity> {
+    const existing = (await this.listInstalled()).find((city) =>
+      city.manifest.id === BUNDLED_OVERVIEW_ID && city.manifest.version === BUNDLED_OVERVIEW_VERSION);
+    if (existing) return existing;
+    const stage = this.makeStage();
+    try {
+      return await this.installArchive(await bundledOverviewArchive(), stage);
+    } finally {
+      if (stage.exists) stage.delete();
     }
   }
 

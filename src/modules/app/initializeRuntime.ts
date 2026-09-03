@@ -10,6 +10,8 @@ import { cityBoundaryFeatures, edgeFeatures, landmarkFeatures, partialCoverageFe
 import { offlineStyle } from "../map/offlineStyle";
 import { DefaultRewardEngine } from "../rewards/DefaultRewardEngine";
 import type { InstalledCity } from "../regions/cityPackTypes";
+import { mapCapabilities } from "../regions/mapCapabilities";
+import { initializeOverviewRuntime } from "./initializeOverviewRuntime";
 import { mergePackProgress } from "./packProgress";
 import type { RuntimeResources, RuntimeState } from "./runtimeTypes";
 
@@ -21,6 +23,9 @@ export async function initializeRuntime(
   files: InstalledCity,
   storedProgress: RuntimeState["progress"] = [],
 ) {
+  if (!mapCapabilities(files.manifest).exploration) {
+    return initializeOverviewRuntime(setState, resources, files);
+  }
   const { id: cityId, version } = files.manifest;
   const network = await CityNetworkRepository.open(files.networkUri);
   const progress = await LocalProgressRepository.open(network, cityId, version);

@@ -22,7 +22,7 @@ for (const item of packages) {
   });
   const manifest = JSON.parse(readFileSync(paths["manifest.json"], "utf8"));
   await validateManifest(manifest, item, paths);
-  validateTiles(paths["basemap.pmtiles"], item.bbox, item.maxZoom ?? 15);
+  validateTiles(paths["basemap.pmtiles"], item.tileBbox ?? item.bbox, item.maxZoom ?? 15);
   const counts = validateNetwork(paths["network.sqlite"], item);
   totalEdges += counts.edges;
   totalSamples += counts.samples;
@@ -72,7 +72,8 @@ function validateNetwork(path, item) {
   const edges = scalar(db, "edges");
   const samples = scalar(db, "samples");
   const places = scalar(db, "places");
-  if (metadata.pack_kind !== item.kind || metadata.network_profile !== item.profile || !edges || !samples) {
+  const validCounts = item.kind === "overview" ? edges === 0 && samples === 0 : edges > 0 && samples > 0;
+  if (metadata.pack_kind !== item.kind || metadata.network_profile !== item.profile || !validCounts) {
     throw new Error(`Invalid ${item.name} network profile`);
   }
   if (item.expected && (edges !== item.expected.edges || samples !== item.expected.samples || places !== item.expected.places)) {
@@ -89,10 +90,10 @@ function scalar(db, table) {
 }
 
 function validateOverviewPlaces(db, count) {
-  if (count < 100) throw new Error("Overview park inventory is unexpectedly small");
+  if (count !== 21) throw new Error("Overview park inventory is unexpectedly small");
   const details = db.prepare("SELECT detail_pack_id FROM places WHERE detail_pack_id IS NOT NULL ORDER BY detail_pack_id")
     .all().map((row) => row.detail_pack_id);
-  if (details.join(",") !== "county-farm-park,pinckney-state-recreation-area") {
+  if (details.join(",") !== "pinckney-state-recreation-area") {
     throw new Error("Overview detail park links are incomplete");
   }
 }

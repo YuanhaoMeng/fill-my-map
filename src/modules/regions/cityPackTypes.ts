@@ -1,5 +1,5 @@
 export type MapPackKind = "city" | "overview" | "place";
-export type NetworkProfile = "street" | "arterial" | "trail";
+export type NetworkProfile = "street" | "arterial" | "trail" | "none";
 
 export interface CityPackManifest {
   formatVersion: 1 | 2;

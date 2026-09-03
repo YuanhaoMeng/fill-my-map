@@ -19,7 +19,7 @@ export function OfflineMapLayers({ map, mapKey }: { map: MapContent; mapKey: str
           }}
         />
       </GeoJSONSource> : null}
-      <GeoJSONSource id={id("coverage")} data={map.edges}>
+      {map.edges.features.length ? <GeoJSONSource id={id("coverage")} data={map.edges}>
         <Layer
           id={id("coverage-lines")}
           type="line"
@@ -37,7 +37,7 @@ export function OfflineMapLayers({ map, mapKey }: { map: MapContent; mapKey: str
             "line-width": 2.2,
           }}
         />
-      </GeoJSONSource>
+      </GeoJSONSource> : null}
       {map.partialCoverage.features.length ? <GeoJSONSource id={id("partial-coverage")} data={map.partialCoverage}>
         <Layer
           id={id("partial-coverage-lines")}
@@ -60,16 +60,11 @@ export function OfflineMapLayers({ map, mapKey }: { map: MapContent; mapKey: str
       {map.places.features.length ? <GeoJSONSource
         id={id("places")}
         data={map.places}
-        cluster
-        clusterMaxZoom={11}
-        clusterRadius={35}
       >
-        <Layer id={id("park-clusters")} type="circle" filter={["has", "point_count"]} paint={{ "circle-color": theme.colors.muted, "circle-opacity": 0.35, "circle-radius": 7 }} />
-        <Layer id={id("park-halo")} type="circle" filter={["!", ["has", "point_count"]]} paint={{ "circle-color": theme.colors.explored, "circle-opacity": 0.18, "circle-radius": 7 }} />
+        <Layer id={id("park-halo")} type="circle" paint={{ "circle-color": theme.colors.explored, "circle-opacity": 0.18, "circle-radius": 7 }} />
         <Layer
           id={id("park-dot")}
           type="circle"
-          filter={["!", ["has", "point_count"]]}
           paint={{ "circle-color": ["case", ["has", "detailPackId"], theme.colors.explored, theme.colors.muted], "circle-radius": 3.5 }}
         />
       </GeoJSONSource> : null}

@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { basemap, createdAt, dnrSource, osmSources, packages, packVersion } from "./config-v2.mjs";
+import { basemap, createdAt, dnrParkSource, dnrSource, osmSources, packages, packVersion } from "./config-v2.mjs";
 import { download, ensureDirectories, requireCommand, run, sha256 } from "./lib.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -9,33 +9,34 @@ const workRoot = resolve(import.meta.dirname, "work-v2");
 const outputRoot = resolve(root, "map-packs/cities");
 ensureDirectories(cache, workRoot, outputRoot);
 ["curl", "osmium", "pmtiles", "zip"].forEach(requireCommand);
-const parkFilter = ["nwr/leisure=park", "nwr/leisure=nature_reserve", "nwr/boundary=national_park", "nwr/boundary=protected_area"];
 for (const source of osmSources) {
   await download(source.url, resolve(cache, source.snapshot), source.md5);
 }
 const dnrPath = resolve(cache, dnrSource.snapshot);
 run("node", [resolve(import.meta.dirname, "fetch-dnr.mjs"), dnrPath]);
+const dnrParksPath = resolve(cache, dnrParkSource.snapshot);
+run("node", [resolve(import.meta.dirname, "fetch-dnr-parks.mjs"), dnrParksPath]);
 
 for (const item of packages) {
   const work = resolve(workRoot, item.id);
   const output = resolve(outputRoot, item.id);
   rmSync(work, { recursive: true, force: true });
   ensureDirectories(work, output);
-  const source = prepareSource(item, work);
+  const source = item.kind === "overview" ? null : prepareSource(item, work);
   const boundary = resolve(work, "boundary.geojsonseq");
   const roads = resolve(work, "roads.geojsonseq");
   const parks = resolve(work, "parks.geojsonseq");
   prepareBoundary(item, boundary);
-  exportFiltered(source, roads, roadFilter(item.profile), resolve(work, "roads.osm.pbf"));
-  if (item.kind === "overview") exportFiltered(source, parks, parkFilter, resolve(work, "parks.osm.pbf"));
-  else writeFileSync(parks, "");
+  if (source) exportFiltered(source, roads, roadFilter(item.profile), resolve(work, "roads.osm.pbf"));
+  else writeFileSync(roads, "");
+  writeFileSync(parks, "");
   const network = resolve(output, "network.sqlite");
   const args = [boundary, roads, parks, network, item.id];
-  if (item.officialSource) args.push(dnrPath);
+  args.push(item.officialSource ? dnrPath : "-", item.kind === "overview" ? dnrParksPath : "-");
   run("node", [resolve(import.meta.dirname, "build-network-v2.mjs"), ...args]);
   const basemapPath = resolve(output, "basemap.pmtiles");
   rmSync(basemapPath, { force: true });
-  run("pmtiles", ["extract", basemap.url, basemapPath, `--bbox=${item.bbox}`, `--maxzoom=${item.maxZoom ?? basemap.maxZoom}`]);
+  run("pmtiles", ["extract", basemap.url, basemapPath, `--bbox=${item.tileBbox ?? item.bbox}`, `--maxzoom=${item.maxZoom ?? basemap.maxZoom}`]);
   await writePackageFiles(item, output, network, basemapPath);
 }
 run("node", [resolve(import.meta.dirname, "package-release-v2.mjs")]);
@@ -86,6 +87,12 @@ async function writePackageFiles(item, output, network, basemapPath) {
   }));
   if (item.officialSource) selectedSources.push({
     name: dnrSource.name, snapshot: dnrSource.snapshot, url: dnrSource.url, license: "Michigan public record",
+  });
+  if (item.kind === "overview") selectedSources.push({
+    name: dnrParkSource.name, snapshot: dnrParkSource.snapshot, url: dnrParkSource.url, license: "Michigan public record",
+  });
+  selectedSources.push({
+    name: "Protomaps Basemap", snapshot: "20260811", url: basemap.url, license: "ODbL-1.0",
   });
   const manifest = {
     formatVersion: 2, id: item.id, displayName: item.name, version: packVersion, createdAt,

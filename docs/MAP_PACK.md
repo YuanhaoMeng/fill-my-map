@@ -1,33 +1,34 @@
 # Reproducible map packages
 
 The builder is separate from the mobile App. Pinned input URLs and checksums are
-in `tools/map-pack/config.mjs`.
+in `tools/map-pack/config-v2.mjs`.
 
 For the v2 pilot, `pnpm map:build:v2`:
 
-1. downloads and MD5-checks fixed Michigan, Ohio, and Ontario Geofabrik PBFs;
-2. builds a 50-mile circle centered on Ypsilanti without clipping at borders;
-3. keeps motorway, trunk, primary, and secondary roads (including link classes);
-4. indexes every OSM park/nature-reserve/protected-park object in the circle;
-5. builds Pinckney and County Farm boundaries and public trail networks;
-6. matches Pinckney OSM trail segments to nearby Michigan DNR official names;
-7. samples networks about every 15 metres and builds SQLite plus R-Tree;
-8. extracts fixed Protomaps tiles (overview z0–14; park detail z0–15);
+1. downloads and MD5-checks the fixed Michigan Geofabrik PBF;
+2. queries official Michigan DNR project boundaries intersecting 50 miles of Ypsilanti;
+3. deduplicates those boundaries into 21 state park/recreation-area entry points;
+4. creates an overview SQLite file with zero roads and zero exploration samples;
+5. extracts the continental United States from fixed Protomaps tiles at z0–7;
+6. builds the Pinckney boundary and public OSM trail network at z0–15;
+7. matches Pinckney OSM segments to nearby Michigan DNR official trail names;
+8. samples park trails about every 15 metres and builds SQLite plus R-Tree;
 9. writes provenance, ODbL, bounds, version, and SHA-256 metadata;
-10. creates one four-file `.fillmap` archive and the static catalog.
+10. creates four-file `.fillmap` archives, the catalog, and the bundled overview asset.
 
-Artifacts live outside `assets/`:
+Generated artifacts and the one intentional bundled asset are:
 
 ```text
 map-packs/cities/<package-id>/
 map-packs/releases/<package-id>-<version>.fillmap
 docs/maps/catalog.json
+assets/maps/united-states-overview.zip
 ```
 
-Generated v3 packages are GitHub Release assets and are ignored by Git. `pnpm
-map:fetch` restores them with SHA-256 and archive allowlist checks.
+Generated v4 park packages are GitHub Release assets. The 18.7 MB overview is
+tracked as an App asset and checked against a hard 20 MB budget.
 
 `pnpm map:verify` checks each database, profile, fixed counts, PMTiles layers and
 bounds, hashes, archive allowlist, catalog, license, park links, DNR provenance,
-and formal Pinckney route names. Current verified totals: three packages, 7,726
-parks, 49,807 network segments, and 852,515 samples. The catalog is on GitHub Pages.
+and formal Pinckney route names. Current verified totals: two packages, 21 parks,
+365 trail segments, and 13,026 samples. The overview contributes no network data.

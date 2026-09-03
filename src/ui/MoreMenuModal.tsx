@@ -6,6 +6,7 @@ export function MoreMenuModal({
   visible,
   sessionActive,
   rewardCount,
+  explorationAvailable,
   onClose,
   onMaps,
   onData,
@@ -16,6 +17,7 @@ export function MoreMenuModal({
   visible: boolean;
   sessionActive: boolean;
   rewardCount: number;
+  explorationAvailable: boolean;
   onClose: () => void;
   onMaps: () => void;
   onData: () => void;
@@ -32,8 +34,8 @@ export function MoreMenuModal({
           <Text style={styles.title}>{t("menu")}</Text>
           <Item label={t("maps")} disabled={sessionActive} onPress={onMaps} />
           <Item label={t("manageData")} disabled={sessionActive} onPress={onData} />
-          <Item label={t("missingRoads")} onPress={onMissing} />
-          <Item label={`${t("rewards")} · ${rewardCount}`} onPress={onRewards} />
+          {explorationAvailable ? <Item label={t("missingRoads")} onPress={onMissing} /> : null}
+          {explorationAvailable ? <Item label={`${t("rewards")} · ${rewardCount}`} onPress={onRewards} /> : null}
           <Item label={t("aboutLicenses")} onPress={onAbout} />
           <Item label={t("close")} onPress={onClose} />
         </View>

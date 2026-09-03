@@ -17,6 +17,8 @@ tools/map-pack/work-v2/
 map-packs/cities/ypsilanti-50mi/
 map-packs/cities/pinckney-state-recreation-area/
 map-packs/cities/county-farm-park/
+map-packs/cities/united-states-overview/
 map-packs/releases/*-2026.08.29-v3.fillmap
+map-packs/releases/*-2026.09.03-v4.fillmap
 
 *.log

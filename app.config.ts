@@ -8,7 +8,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "dark",
   scheme: "fillmymap",
   locales: { en: "./assets/locales/en.json", zh: "./assets/locales/zh.json" },
-  assetBundlePatterns: ["assets/locales/*"],
+  assetBundlePatterns: ["assets/locales/*", "assets/maps/*"],
   ios: {
     bundleIdentifier: "app.fillmymap.mobile",
     supportsTablet: false,

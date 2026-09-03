@@ -2,36 +2,25 @@
   "formatVersion": 2,
   "packages": [
     {
-      "id": "ypsilanti-50mi",
-      "displayName": "Ypsilanti · 50 mi",
-      "version": "2026.08.29-v3",
+      "id": "united-states-overview",
+      "displayName": "Parks near Ypsilanti",
+      "version": "2026.09.03-v4",
       "kind": "overview",
-      "networkProfile": "arterial",
-      "sizeBytes": 117692209,
-      "sha256": "8bd2c7444376c292e50745abad1522a9bd9a68e7d3df166f96793d74a23e5acf",
-      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/ypsilanti-50mi-2026.08.29-v3.fillmap"
+      "networkProfile": "none",
+      "sizeBytes": 18731671,
+      "sha256": "38168f4a0649a0876fbb50cda3d611b812c4edcc8c03c21457cf5a872fa13e76",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.09.03-v4/united-states-overview-2026.09.03-v4.fillmap"
     },
     {
       "id": "pinckney-state-recreation-area",
       "displayName": "Pinckney State Recreation Area",
-      "version": "2026.08.29-v3",
+      "version": "2026.09.03-v4",
       "kind": "place",
-      "parentId": "ypsilanti-50mi",
+      "parentId": "united-states-overview",
       "networkProfile": "trail",
-      "sizeBytes": 3023906,
-      "sha256": "eec0f2e5df2d7c3dcccf8e065282c85f4622ab54fb6ac62a87dc9ffddbdf6e6a",
-      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/pinckney-state-recreation-area-2026.08.29-v3.fillmap"
-    },
-    {
-      "id": "county-farm-park",
-      "displayName": "County Farm Park",
-      "version": "2026.08.29-v3",
-      "kind": "place",
-      "parentId": "ypsilanti-50mi",
-      "networkProfile": "trail",
-      "sizeBytes": 1432982,
-      "sha256": "5b355920114d5631b6adb72075b438c2781470d0564a34c74308d39e6727ad8c",
-      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.08.29-v3/county-farm-park-2026.08.29-v3.fillmap"
+      "sizeBytes": 3023284,
+      "sha256": "938f50f829445fdce6580b7947a1ebad76cc519c24a2c5ca71b2612e5f141b2c",
+      "downloadUrl": "https://github.com/YuanhaoMeng/fill-my-map/releases/download/maps-2026.09.03-v4/pinckney-state-recreation-area-2026.09.03-v4.fillmap"
     }
   ]
 }

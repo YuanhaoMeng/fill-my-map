@@ -12,6 +12,7 @@ import { AboutModal } from "./AboutModal";
 import { CityMapsModal } from "./CityMapsModal";
 import { MoreMenuModal } from "./MoreMenuModal";
 import { ExplorationShareModal } from "./ExplorationShareModal";
+import { mapCapabilities } from "../modules/regions/mapCapabilities";
 
 export function HomeScreen() {
   const { t } = useMessages();
@@ -24,7 +25,8 @@ export function HomeScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [captureRequest, setCaptureRequest] = useState(0);
   const [shareImage, setShareImage] = useState<string | null>(null);
-  const disabled = runtime.status !== "ready";
+  const capabilities = mapCapabilities(runtime.maps.active?.manifest);
+  const disabled = runtime.status !== "ready" || !capabilities.exploration;
   const activeProgress = runtime.progress.find((progress) =>
     progress.cityId === runtime.maps.active?.manifest.id &&
     progress.regionVersion === runtime.maps.active?.manifest.version);
@@ -58,26 +60,28 @@ export function HomeScreen() {
         <Text style={styles.logo}>{t("appName")}</Text>
       </View>
       <View style={styles.panel}>
-        <Text style={styles.privacy}>{runtime.session ? t("recording") : t("privacy")}</Text>
+        <Text style={styles.privacy}>{capabilities.exploration
+          ? runtime.session ? t("recording") : t("privacy")
+          : t("choosePark")}</Text>
         {parent && !runtime.session ? (
           <TouchableOpacity accessibilityLabel={t("backToRegion")} accessibilityRole="button" onPress={() => void runtime.activateMap(parent)}>
             <Text style={styles.back}>‹ {t("backToRegion")}</Text>
           </TouchableOpacity>
         ) : null}
-        {activeProgress ? (
+        {capabilities.progress && activeProgress ? (
           <View style={styles.progressRow}>
             <Text style={styles.city}>{runtime.maps.active?.manifest.displayName ?? activeProgress.cityId}</Text>
             <Text style={styles.percent}>{activeProgress.percent.toFixed(2)}% {t("explored")}</Text>
           </View>
         ) : null}
         {runtime.actionError ? <Text style={styles.error}>{t("permissionDenied")}</Text> : null}
-        <View style={styles.actions}>
+        {capabilities.exploration ? <View style={styles.actions}>
           {runtime.session ? (
             <Action color={theme.colors.explored} label={t("stop")} onPress={() => void runtime.stop().then(() => setCaptureRequest((value) => value + 1))} />
           ) : (
             <Action disabled={disabled} color={theme.colors.explored} label={t("startExplore")} onPress={() => void runtime.start()} />
           )}
-        </View>
+        </View> : null}
         <Text style={styles.attribution}>{t("attribution")}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => setShowMenu(true)}>
           <Text style={styles.manage}>{t("menu")}</Text>
@@ -115,6 +119,7 @@ export function HomeScreen() {
         visible={showMenu}
         sessionActive={Boolean(runtime.session)}
         rewardCount={runtime.rewards.length}
+        explorationAvailable={capabilities.exploration}
         onClose={() => setShowMenu(false)}
         onMaps={() => { setShowMenu(false); setShowMaps(true); }}
         onData={() => { setShowMenu(false); setShowData(true); }}

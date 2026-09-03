@@ -36,7 +36,7 @@ export function CityMapsModal({
 }) {
   const { t } = useMessages();
   const busy = downloadProgress !== undefined && downloadProgress < 1;
-  const rows = catalogRows(catalog, installed);
+  const rows = catalogRows(catalog, installed).filter((entry) => entry.kind === "place");
   return (
     <Modal visible={visible} animationType="slide">
       <View style={styles.screen}>

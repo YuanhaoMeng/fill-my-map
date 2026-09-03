@@ -86,5 +86,5 @@ const hash = (value: unknown): value is string => typeof value === "string" && S
 const validId = (value: unknown): value is string => typeof value === "string" && ID.test(value);
 const packKind = (value: unknown): value is "city" | "overview" | "place" =>
   value === "city" || value === "overview" || value === "place";
-const networkProfile = (value: unknown): value is "street" | "arterial" | "trail" =>
-  value === "street" || value === "arterial" || value === "trail";
+const networkProfile = (value: unknown): value is "street" | "arterial" | "trail" | "none" =>
+  value === "street" || value === "arterial" || value === "trail" || value === "none";

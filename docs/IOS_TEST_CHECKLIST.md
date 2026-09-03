@@ -1,62 +1,39 @@
-# iOS acceptance checklist — region and park maps
+# iOS acceptance checklist — park-first v0.1
 
 ## Automated and packaging
 
-- [x] `pnpm verify` passes line, privacy, zero-map-assets, lint, TypeScript, tests, and map checks.
-- [x] `expo-doctor` passes all checks.
-- [x] Ann Arbor and Ypsilanti are separate, verified `.fillmap` archives.
-- [x] App source contains one exploration mode and city/version-scoped progress.
-- [x] Archive allowlist, traversal, decompression-size, manifest, and catalog validation tests pass.
-- [x] Camera follow, partial coverage restart, city isolation, and share-privacy tests pass.
-- [x] Release `.app` contains no `.pmtiles`, `network.sqlite`, or `.fillmap`.
-- [x] Fresh simulator launch shows city selection with no map installed.
-- [x] Simulator downloads, activates, switches, deletes, and reimports both packages.
-- [x] Local v2 package verification passes for the Ypsilanti 50-mile overview,
-  Pinckney, and County Farm.
-- [x] Overview inventory contains 7,726 park points and exactly two implemented links.
-- [x] Pinckney verifies OSM geometry, DNR provenance, and official route-name matching.
-- [x] Inactive installed-map progress remains visible after switching and catalog migration.
-- [ ] Simulator downloads the v2 overview and both park packages from the published catalog.
-- [ ] Simulator taps both implemented park markers, opens details, and returns to overview.
-- [ ] Simulator confirms an unimplemented park remains informational.
+- [x] `pnpm verify` passes line, privacy, asset-budget, lint, TypeScript, tests, and map checks.
+- [x] `pnpm exec expo-doctor` passes all checks.
+- [x] Overview has no exploration, location, coverage, exclusion, or reward capability.
+- [x] Overview contains 0 roads, 0 samples, and 21 official DNR park entries.
+- [x] Continental-US z0–7 overview archive is 18.7 MB and below the 20 MB budget.
+- [x] Pinckney is a separate 2.9 MB on-demand park package.
+- [x] County Farm and obsolete overview packages are removed during migration.
+- [x] Partial coverage restart, package isolation, camera follow, and share-privacy unit tests pass.
+- [x] Release `.app` embeds exactly one overview archive and no park package.
 
-## Exploration and sharing
+## Simulator
 
-- [x] First valid simulated location recenters and follows the user.
-- [x] Dragging suspends follow; Resume restores it in the simulator UI suite.
-- [x] Matched road portions repaint immediately and restore after a simulator cold launch.
-- [x] Finish fits the active city and opens a screenshot preview.
-- [x] Shared preview shows explored area, city, percent, and OSM attribution.
-- [x] Shared preview omits raw route, endpoints, user marker, and precise time.
-- [x] GPX export remains an explicit user action through the system share sheet.
-
-## Recovery and privacy
-
-- [x] Foreground/background denial is recoverable in the simulator UI suite.
-- [ ] Location Services off is recoverable.
-- [x] Force-quit marks an active session interrupted on next launch.
-- [x] Corrupt and truncated packages are rejected without replacing an installed map.
-- [ ] Low-storage download/export failure preserves maps, tracks, and progress.
-- [x] Deleting a city map preserves progress after reinstall.
-- [ ] Recording makes no network request; downloaded maps work in airplane mode.
+- [x] Fresh offline launch installs and opens the bundled overview without a map picker.
+- [x] Upgrade removes the old 112 MB overview and opens the new background.
+- [x] Overview shows all 21 park entries around Ypsilanti without interaction lag.
+- [ ] Tapping Pinckney downloads, opens, and returns to overview without visible delay.
+- [ ] Tapping an unavailable park remains informational and does not start exploration.
+- [ ] Park Start obtains a first location, recenters, and follows the user.
+- [ ] Drag suspends follow and Resume restores it.
+- [ ] Matched trail portions repaint immediately and survive a cold launch.
+- [ ] Finish fits the park and opens a privacy-safe screenshot preview.
+- [ ] Airplane-mode cold launch opens overview and every already-downloaded park.
+- [ ] Denied permission, corrupt archive, interrupted download, and low storage are recoverable.
 
 ## Real iPhone / field work (must not be simulated)
 
-- [ ] Real iPhone downloads and cold-restores the 50-mile overview.
-- [ ] Real iPhone renders the full park inventory without unacceptable interaction lag.
-- [ ] Real iPhone opens Pinckney and County Farm from overview park points.
-- [ ] Field-check at least one formally named Pinckney route and one County Farm trail.
-
-- [x] Personal Team Release build launches on the connected iPhone.
-- [x] Wi-Fi reinstall and cold launch succeed.
-- [x] Real iPhone downloads Ann Arbor and restores it after a cold launch.
-- [x] Real iPhone downloads, opens, switches, and deletes Ypsilanti.
-- [x] Real iPhone short-run UI tests cover follow recovery, privacy share preview,
-  GPX system sharing, and force-quit recovery.
-- [ ] Ann Arbor: at least 15 minutes on foot, including 5 minutes locked.
-- [ ] Ann Arbor: at least 15 minutes by car, including 5 minutes locked.
-- [ ] Ypsilanti: at least 15 minutes on foot, including 5 minutes locked.
-- [ ] Ypsilanti: at least 15 minutes by car, including 5 minutes locked.
+- [ ] Release build installs, launches cold, and opens the overview with Wi-Fi disabled.
+- [ ] All 21 park points remain responsive on the real device.
+- [ ] Pinckney downloads once, then switches both directions offline without visible delay.
+- [ ] Walk at least 15 minutes on a named Pinckney trail, including 5 minutes locked.
+- [ ] Confirm live partial coverage, restart restoration, finish percentage, and share image.
+- [ ] Verify GPX export is explicit and no network request contains location or track data.
 - [ ] One-hour locked recording uses approximately 8% battery or less.
 
 Personal Team signatures expire quickly and are not public distribution builds.
